@@ -32,7 +32,6 @@ app.post('/api/analyze', async (req, res) => {
         // Konfigurasi input Apify
         const input = {
             "postURLs": [url], // Memasukkan URL yang dikirim dari HTML
-            "hashtags": ["fyp"],
             "resultsPerPage": 1,
             "profileScrapeSections": ["videos"],
             "profileSorting": "latest",
