@@ -2,233 +2,185 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOL & Affiliate Performance Monitor</title>
+    <title>Campaign Dashboard Monitor</title>
     <style>
-        :root {
-            --bg-color: #f4f7fa;
-            --primary: #0056b3;
-            --card-bg: #ffffff;
-            --text-dark: #333333;
-            --text-muted: #6c757d;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-dark);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .input-section {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .input-group {
-            flex: 1;
-            min-width: 200px;
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        input {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            height: 40px;
-            align-self: flex-end;
-        }
-        button:hover {
-            background-color: #004494;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-        }
-        .metric-card {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-        .metric-title {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--primary);
-        }
-        .hidden {
-            display: none;
-        }
+        /* CSS Dasar untuk mengatur view */
+        body { font-family: sans-serif; background: #f4f7fa; padding: 20px; }
+        .view-section { display: none; } /* Semua section disembunyikan default */
+        .view-section.active { display: block; } /* Hanya yang active yang muncul */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-overlay.active { display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        button { cursor: pointer; padding: 10px 15px; background: #f68b1f; color: white; border: none; border-radius: 5px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #f68b1f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h2>Dashboard Monitor KOL & Affiliate</h2>
-        <p>Lacak performa postingan dan hitung metrik finansial secara real-time</p>
-    </div>
-
-    <!-- Input Form -->
-    <div class="input-section">
-        <div class="input-group">
-            <label for="post-link">URL Postingan (IG / TikTok)</label>
-            <input type="url" id="post-link" placeholder="Contoh: https://vt.tiktok.com/..." required>
+    <!-- 1. HOMESCREEN -->
+    <div id="view-homescreen" class="view-section active">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Dashboard Performa Campaign</h2>
+            <div>
+                <button>Monthly</button> <button>Weekly</button>
+                <button onclick="toggleModal(true)">+ Add Campaign</button>
+            </div>
         </div>
-        <div class="input-group">
-            <label for="budget-input">Budget (Rp)</label>
-            <input type="number" id="budget-input" placeholder="Contoh: 1000000" required>
-        </div>
-        <button onclick="analyzePost()">Analisis Data</button>
-    </div>
-
-    <!-- Dashboard Metrics -->
-    <div class="dashboard-grid" id="metrics-container" style="display: none;">
-        <div class="metric-card">
-            <div class="metric-title">Views</div>
-            <div class="metric-value" id="val-views">0</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-title">Likes</div>
-            <div class="metric-value" id="val-likes">0</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-title">Comments</div>
-            <div class="metric-value" id="val-comments">0</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-title">Shares</div>
-            <div class="metric-value" id="val-shares">0</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-title">Saves</div>
-            <div class="metric-value" id="val-saves">0</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-title">Cost / View</div>
-            <div class="metric-value" id="val-cpv">Rp 0</div>
-        </div>
-        <div class="metric-card hidden" id="card-gmv">
-            <div class="metric-title">Est. GMV (TikTok)</div>
-            <div class="metric-value" id="val-gmv">Rp 0</div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Fungsi format rupiah
-    const formatRupiah = (angka) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(angka);
-    };
-
-    // Fungsi format angka ribuan (K, M)
-    const formatNumber = (num) => {
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-        return num;
-    };
-
-    async function analyzePost() {
-    const link = document.getElementById('post-link').value;
-    const budget = parseFloat(document.getElementById('budget-input').value);
-
-    if (!link || isNaN(budget)) {
-        alert("Harap masukkan link postingan dan budget yang valid!");
-        return;
-    }
-
-    // Tampilkan kontainer metrik dengan teks "Loading..."
-    document.getElementById('metrics-container').style.display = 'grid';
-    document.getElementById('val-views').innerText = "Loading...";
-    document.getElementById('val-likes').innerText = "Loading...";
-    document.getElementById('val-comments').innerText = "Loading...";
-    document.getElementById('val-shares').innerText = "Loading...";
-    document.getElementById('val-saves').innerText = "Loading...";
-    document.getElementById('val-cpv').innerText = "Loading...";
-    document.getElementById('val-gmv').innerText = "Loading...";
-
-    const isTikTok = link.toLowerCase().includes('tiktok.com');
-    const gmvCard = document.getElementById('card-gmv');
-    if (isTikTok) gmvCard.classList.remove('hidden');
-    else gmvCard.classList.add('hidden');
-
-    try {
-        // Panggil API Backend Node.js
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url: link })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert("Error dari server: " + (data.error || "Terjadi kesalahan"));
-            return;
-        }
-
-        // Kalkulasi Cost Per View (CPV)
-        const costPerView = budget / data.views;
-
-        // Render ke UI
-        document.getElementById('val-views').innerText = formatNumber(data.views);
-        document.getElementById('val-likes').innerText = formatNumber(data.likes);
-        document.getElementById('val-comments').innerText = formatNumber(data.comments);
-        document.getElementById('val-shares').innerText = formatNumber(data.shares);
-        document.getElementById('val-saves').innerText = formatNumber(data.saves);
-        document.getElementById('val-cpv').innerText = formatRupiah(costPerView);
         
-        if (isTikTok) {
-            document.getElementById('val-gmv').innerText = formatRupiah(data.gmv);
+        <table id="campaign-table">
+            <thead>
+                <tr>
+                    <th>Nama Campaign</th>
+                    <th>Total Views</th>
+                    <th>Total Likes</th>
+                    <th>Avg Cost/View</th>
+                </tr>
+            </thead>
+            <tbody id="campaign-list">
+                <!-- Data agregasi campaign akan dirender di sini -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 2. OVERLAY ADD CAMPAIGN -->
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Add Campaign</h3>
+            <label>Nama Campaign*</label><br>
+            <input type="text" id="new-campaign-name" style="width: 100%; margin-bottom: 15px;"><br>
+            <label>Produk*</label><br>
+            <input type="text" id="new-product-name" style="width: 100%; margin-bottom: 15px;"><br>
+            <button onclick="createCampaign()" style="width: 100%;">Tambah Campaign</button>
+            <button onclick="toggleModal(false)" style="width: 100%; margin-top: 10px; background: #ccc;">Batal</button>
+        </div>
+    </div>
+
+    <!-- 3. INPUT DATA BASE -->
+    <div id="view-input" class="view-section">
+        <button onclick="switchView('view-homescreen')">&larr; Back to Home</button>
+        <h2 id="active-campaign-title">Input Data - Campaign Name</h2>
+        
+        <div style="background: white; padding: 20px; margin-top: 20px; border-radius: 8px;">
+            <label>Url Postingan (pisahkan dengan koma)*</label><br>
+            <textarea id="url-inputs" rows="4" style="width: 100%; margin-bottom: 15px;"></textarea><br>
+            
+            <label>Budget Campaign*</label><br>
+            <input type="number" id="budget-input" style="width: 100%; margin-bottom: 15px;"><br>
+            
+            <button onclick="analyzeMultiplePosts()" style="width: 100%;">Analisa Postingan</button>
+        </div>
+
+        <!-- Scraping on Process (Loading) -->
+        <div id="loading-state" style="display: none; text-align: center; padding: 40px;">
+            <div class="spinner"></div>
+            <p>Scraping data on progress. Please wait...</p>
+        </div>
+
+        <!-- Scraping Done (Hasil) -->
+        <table id="result-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Nama Akun</th>
+                    <th>Views</th>
+                    <th>Likes</th>
+                    <th>Cost/view</th>
+                </tr>
+            </thead>
+            <tbody id="result-list"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // State Management
+        let currentCampaign = {};
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
         }
 
-    } catch (error) {
-        console.error("Gagal terhubung ke backend:", error);
-        alert("Gagal terhubung ke server. Pastikan server Node.js sedang berjalan.");
-    }
-}
-</script>
+        function toggleModal(show) {
+            document.getElementById('modal-add').classList.toggle('active', show);
+        }
+
+        function createCampaign() {
+            const name = document.getElementById('new-campaign-name').value;
+            if(!name) return alert('Nama wajib diisi');
+            
+            // Simulasikan pembuatan pool di tabel Homescreen
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="cursor:pointer; color:blue;" onclick="goToInput('${name}')">${name} &gt;</td>
+                <td>-</td><td>-</td><td>-</td>
+            `;
+            document.getElementById('campaign-list').appendChild(tr);
+            toggleModal(false);
+        }
+
+        function goToInput(campaignName) {
+            currentCampaign.name = campaignName;
+            document.getElementById('active-campaign-title').innerText = `Input Data - ${campaignName}`;
+            
+            // Reset state
+            document.getElementById('url-inputs').value = '';
+            document.getElementById('budget-input').value = '';
+            document.getElementById('result-table').style.display = 'none';
+            
+            switchView('view-input');
+        }
+
+        async function analyzeMultiplePosts() {
+            const urlsRaw = document.getElementById('url-inputs').value;
+            const budget = parseFloat(document.getElementById('budget-input').value);
+            
+            if(!urlsRaw || isNaN(budget)) return alert('URL dan Budget wajib diisi');
+            
+            // Bersihkan string URL dari spasi dan enter
+            const urls = urlsRaw.split(',').map(url => url.trim()).filter(url => url !== "");
+
+            // Munculkan Loading Screen
+            document.getElementById('loading-state').style.display = 'block';
+            document.getElementById('result-table').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/analyze-multiple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const results = await response.json();
+                
+                // Kalkulasi CPV (Asumsi: Budget dibagi rata ke semua postingan)
+                const budgetPerPost = budget / results.length;
+
+                // Render ke Tabel Hasil
+                const tbody = document.getElementById('result-list');
+                tbody.innerHTML = ''; // Bersihkan tabel
+                
+                results.forEach(item => {
+                    const cpv = item.views > 0 ? (budgetPerPost / item.views) : 0;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.author}</td>
+                            <td>${item.views.toLocaleString('id-ID')}</td>
+                            <td>${item.likes.toLocaleString('id-ID')}</td>
+                            <td>Rp ${cpv.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('result-table').style.display = 'table';
+
+            } catch (error) {
+                alert('Gagal mengambil data dari server');
+                document.getElementById('loading-state').style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

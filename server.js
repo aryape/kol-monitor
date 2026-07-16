@@ -19,20 +19,20 @@ const client = new ApifyClient({
 });
 
 // Endpoint untuk menerima URL dari Frontend dan menjalankan Apify
-app.post('/api/analyze', async (req, res) => {
-    const { url } = req.body;
+app.post('/api/analyze-multiple', async (req, res) => {
+    const { urls } = req.body; // urls sekarang berupa array: ["url1", "url2"]
 
-    if (!url) {
+    if (!urls || urls.length === 0) {
         return res.status(400).json({ error: 'URL postingan wajib dikirim' });
     }
 
     try {
-        console.log(`[LOG] Memulai proses Apify untuk URL: ${url}`);
+        console.log(`[LOG] Memulai scraping untuk ${urls.length} URL...`);
         
-        // Konfigurasi input Apify
         const input = {
-            "postURLs": [url], // Memasukkan URL yang dikirim dari HTML
-            "resultsPerPage": 1,
+            "postURLs": urls, // Apify bisa menerima banyak URL sekaligus
+            "hashtags": [],
+            "resultsPerPage": urls.length,
             "profileScrapeSections": ["videos"],
             "profileSorting": "latest",
             "excludePinnedPosts": false,
@@ -68,18 +68,17 @@ app.post('/api/analyze', async (req, res) => {
             return res.status(404).json({ error: 'Data metrik tidak ditemukan oleh Apify' });
         }
 
-        // Ambil data dari array pertama (karena kita hanya mencari 1 URL)
-        const data = items[0];
-
-        // Format hasil untuk dikirim ke HTML
-        const result = {
+        // Memetakan hasil scraping agar rapi
+        const results = items.map(data => ({
+            author: data.authorMeta?.name || 'Unknown',
+            url: data.webVideoUrl || '',
             views: data.playCount || 0,
             likes: data.diggCount || 0,
             comments: data.commentCount || 0,
             shares: data.shareCount || 0,
             saves: data.collectCount || 0,
-            gmv: 0 // Default 0 untuk metrik yang tidak ada
-        };
+            gmv: 0 
+        }));
 
         // Kirim hasil kembali ke HTML
         res.json(result);
