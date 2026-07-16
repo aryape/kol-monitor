@@ -81,7 +81,7 @@ app.post('/api/analyze-multiple', async (req, res) => {
         }));
 
         // Kirim hasil kembali ke HTML
-        res.json(result);
+        res.json(results);
         
     } catch (error) {
         console.error('[ERROR]', error);
