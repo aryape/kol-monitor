@@ -1,221 +1,272 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>Campaign Dashboard Monitor</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fa; padding: 20px; color: #333; }
-        .view-section { display: none; } 
-        .view-section.active { display: block; } 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-overlay.active { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        th, td { padding: 15px 12px; border-bottom: 1px solid #eee; text-align: left; }
-        th { background-color: #f8f9fa; font-size: 13px; text-transform: uppercase; color: #666; }
-        button { cursor: pointer; padding: 10px 20px; background: #f68b1f; color: white; border: none; border-radius: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #f68b1f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOL Monitor — Dashboard Performa Campaign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-    <!-- HOMESCREEN -->
-    <div id="view-homescreen" class="view-section active">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Dashboard Performa Campaign</h2>
-            <button onclick="toggleModal(true)">+ Add Campaign</button>
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-profile">
+      <div class="avatar-placeholder"></div>
+      <div>
+        <div class="profile-name">Nama Pengguna</div>
+        <div class="profile-tagline">KOL &amp; Affiliate Monitor</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">MENU</div>
+      <button class="nav-item active" data-nav="overview">
+        <span class="nav-icon">🔍</span> Overview
+      </button>
+      <button class="nav-item" data-nav="input">
+        <span class="nav-icon">↪</span> Input Data
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">PLATFORM</div>
+      <button class="nav-item platform-item active" data-platform="tiktok">
+        <span class="nav-icon">♪</span> Tiktok
+      </button>
+      <button class="nav-item platform-item" data-platform="instagram" disabled title="Segera hadir">
+        <span class="nav-icon">◎</span> Instagram
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <main class="main-content">
+
+    <!-- ---------- HOMESCREEN ---------- -->
+    <section id="view-homescreen" class="view active">
+      <div class="page-header">
+        <h1>Dashboard Performa Campaign</h1>
+        <div class="header-actions">
+          <div class="segmented" id="period-toggle">
+            <button class="segmented-btn active" data-period="monthly">Monthly</button>
+            <button class="segmented-btn" data-period="weekly">Weekly</button>
+          </div>
+          <button class="fab-add" id="btn-open-add-campaign" title="Tambah Campaign">+</button>
         </div>
-        
-        <table id = "campaign-table">
+      </div>
+
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="perf-table">
             <thead>
-                <tr>
-                    <th>Nama Campaign</th>
-                    <th>Total Views</th>
-                    <th>Total Likes</th>
-                    <th>Avg Cost/View</th>
-                </tr>
+              <tr>
+                <th class="platform-col">
+                  <div class="th-platform">Tiktok</div>
+                  <div class="th-sub">Nama Campaign</div>
+                </th>
+                <th>Total<br>Views</th>
+                <th>Total<br>Likes</th>
+                <th>Total<br>Comment</th>
+                <th>Total<br>Save</th>
+                <th>Total<br>Share</th>
+                <th>Avg. Cost/<br>View</th>
+              </tr>
             </thead>
-            <tbody id="campaign-list">
-                <tr><td colspan="4" style="text-align:center;">Memuat data dari database...</td></tr>
+            <tbody id="campaign-tbody">
+              <tr><td colspan="7" class="empty-cell">Memuat data campaign...</td></tr>
             </tbody>
-        </table>
-
-        <!-- Tombol Export diletakkan di bawah tabel -->
-        <div style="margin-top: 20px; text-align: right;">
-            <button onclick="exportToExcel()" style="background-color: #28a745;">
-                &#11123; Export to Spreadsheet
-            </button>
+          </table>
         </div>
+      </div>
+
+      <div class="table-footer">
+        <div class="items-per-page">
+          Items Per Page:
+          <select id="items-per-page">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <button class="btn-export" id="btn-export-home">⬇ Export to Spreadsheet</button>
+      </div>
+
+      <div class="two-col">
+        <div class="card list-card">
+          <div class="list-card-header">
+            <div>
+              <div class="list-card-title">Top Account</div>
+              <div class="list-card-sub">Based from GMV</div>
+            </div>
+            <div class="list-card-icon">🏆</div>
+          </div>
+          <div id="top-account-list" class="list-card-body">
+            <div class="empty-cell">Memuat data...</div>
+          </div>
+        </div>
+
+        <div class="card list-card">
+          <div class="list-card-header">
+            <div>
+              <div class="list-card-title">Top Content</div>
+              <div class="list-card-sub">Based from Views and Likes</div>
+            </div>
+            <div class="list-card-icon">🎬</div>
+          </div>
+          <div id="top-content-list" class="list-card-body">
+            <div class="empty-cell">Memuat data...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- DETAIL POSTINGAN CAMPAIGN ---------- -->
+    <section id="view-detail" class="view">
+      <div class="page-header">
+        <h1>Detail Postingan Campaign</h1>
+        <button class="btn-delete" id="btn-delete-campaign">Delete Campaign</button>
+      </div>
+
+      <div class="detail-subheader">
+        <button class="fab-add small" id="btn-add-more-posts" title="Tambah postingan ke campaign ini">+</button>
+        <span id="detail-campaign-label" class="campaign-label">&lt;Nama Campaign&gt; - &lt;Product&gt;</span>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="perf-table">
+            <thead>
+              <tr>
+                <th class="platform-col">
+                  <div class="th-platform">Tiktok</div>
+                  <div class="th-sub">Nama Akun</div>
+                </th>
+                <th>Views</th>
+                <th>Likes</th>
+                <th>Comment</th>
+                <th>Save</th>
+                <th>Share</th>
+                <th>Cost/view</th>
+              </tr>
+            </thead>
+            <tbody id="detail-tbody">
+              <tr><td colspan="7" class="empty-cell">Memuat data postingan...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-footer">
+        <div class="items-per-page">
+          Items Per Page:
+          <select id="items-per-page-detail">
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+        <button class="btn-export" id="btn-export-detail">⬇ Export to Spreadsheet</button>
+      </div>
+
+      <button class="btn-back" id="btn-back-from-detail">&larr; Kembali ke Homescreen</button>
+    </section>
+
+    <!-- ---------- INPUT DATA ---------- -->
+    <section id="view-input" class="view">
+      <div class="page-header">
+        <h1>Input Data</h1>
+      </div>
+
+      <div class="input-subheader">
+        <div>
+          <div class="input-title">Add Campaign - Tiktok</div>
+          <div class="input-helper">Hanya isi url dan budget postingan, sisanya otomatis!</div>
+        </div>
+        <div class="campaign-pill" id="input-campaign-name">&lt;Nama Campaign&gt;</div>
+      </div>
+
+      <div class="card input-card" id="input-card">
+        <div class="input-row">
+          <div class="input-field">
+            <label>Url Postingan (pisahkan dengan koma)<span class="req">*</span></label>
+            <input type="text" id="url-inputs" placeholder="https://www.tiktok.com/...">
+          </div>
+          <div class="input-field">
+            <label>Budget Campaign<span class="req">*</span></label>
+            <input type="text" id="budget-input" placeholder="Rp1.000.000">
+          </div>
+        </div>
+
+        <div class="loading-dots" id="loading-dots" style="display:none;">
+          <span></span><span></span><span></span>
+        </div>
+
+        <button class="btn-analyze" id="btn-analisa">Analisa Postingan</button>
+        <div class="loading-caption" id="loading-caption" style="display:none;">
+          Menarik data dari TikTok dan menyimpan ke database... proses ini bisa memakan waktu 1–2 menit.
+        </div>
+      </div>
+
+      <div class="card table-card" id="input-result-card" style="display:none;">
+        <div class="table-scroll">
+          <table class="perf-table">
+            <thead>
+              <tr>
+                <th class="platform-col">
+                  <div class="th-platform">Tiktok</div>
+                  <div class="th-sub">Nama Akun</div>
+                </th>
+                <th>Views</th>
+                <th>Likes</th>
+                <th>Comment</th>
+                <th>Save</th>
+                <th>Share</th>
+                <th>Cost/view</th>
+              </tr>
+            </thead>
+            <tbody id="input-result-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn-back" id="btn-back-from-input">&larr; Kembali ke Homescreen</button>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ MODAL: ADD CAMPAIGN ============ -->
+<div class="modal-overlay" id="modal-add-campaign">
+  <div class="card modal-content">
+    <h3 class="modal-title">Add Campaign</h3>
+    <div class="input-row">
+      <div class="input-field">
+        <label>Nama Campaign<span class="req">*</span></label>
+        <input type="text" id="new-campaign-name">
+      </div>
+      <div class="input-field">
+        <label>Produk<span class="req">*</span></label>
+        <input type="text" id="new-product-name">
+      </div>
     </div>
+    <button class="btn-analyze" id="btn-submit-campaign">Tambah Campaign</button>
+    <button class="btn-cancel" id="btn-cancel-campaign">Batal</button>
+  </div>
+</div>
 
-    <!-- MODAL ADD CAMPAIGN -->
-    <div id="modal-add" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Add Campaign</h3>
-            <label>Nama Campaign*</label><br>
-            <input type="text" id="new-campaign-name" style="margin-bottom: 15px;"><br>
-            <label>Produk</label><br>
-            <input type="text" id="new-product-name" style="margin-bottom: 15px;"><br>
-            <button onclick="goToInput()" style="width: 100%;">Lanjut ke Input Data</button>
-            <button onclick="toggleModal(false)" style="width: 100%; margin-top: 10px; background: #ccc;">Batal</button>
-        </div>
-    </div>
+<!-- ============ MODAL: PILIH CAMPAIGN DRAFT (dari sidebar Input Data) ============ -->
+<div class="modal-overlay" id="modal-pick-campaign">
+  <div class="card modal-content">
+    <h3 class="modal-title">Pilih Campaign untuk Diisi Datanya</h3>
+    <div id="pick-campaign-list" class="pick-list"></div>
+    <button class="btn-cancel" id="btn-cancel-pick">Batal</button>
+  </div>
+</div>
 
-    <!-- INPUT DATA BASE -->
-    <div id="view-input" class="view-section">
-        <button onclick="switchView('view-homescreen'); loadCampaigns();" style="background: #ccc; color: #333;">&larr; Back to Home</button>
-        <h2 id="active-campaign-title">Input Data</h2>
-        
-        <div style="background: white; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-            <label>Url Postingan (pisahkan dengan koma)*</label><br>
-            <textarea id="url-inputs" rows="5" style="margin-bottom: 15px; font-family: monospace;"></textarea><br>
-            
-            <label>Total Budget Campaign (Rp)*</label><br>
-            <input type="number" id="budget-input" style="margin-bottom: 15px;"><br>
-            
-            <button id="btn-analisa" onclick="analyzeAndSave()" style="width: 100%;">Analisa & Simpan ke Database</button>
-        </div>
-
-        <div id="loading-state" style="display: none; text-align: center; padding: 40px;">
-            <div class="spinner"></div>
-            <p>Menarik data dari TikTok dan menyimpan ke Database...<br><small>Proses ini mungkin memakan waktu 1-2 menit tergantung jumlah URL.</small></p>
-        </div>
-    </div>
-
-    <script>
-        let currentCampaign = { name: '', product: '' };
-
-        // Helper format angka
-        const formatNumber = (num) => num >= 1000 ? (num / 1000).toFixed(1) + 'K' : num;
-        const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(num);
-
-        function switchView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-        }
-
-        function toggleModal(show) {
-            document.getElementById('modal-add').classList.toggle('active', show);
-        }
-
-        function goToInput() {
-            const name = document.getElementById('new-campaign-name').value;
-            const product = document.getElementById('new-product-name').value;
-            if(!name) return alert('Nama Campaign wajib diisi');
-            
-            currentCampaign = { name, product };
-            document.getElementById('active-campaign-title').innerText = `Input Data - ${name}`;
-            
-            // Reset input form
-            document.getElementById('url-inputs').value = '';
-            document.getElementById('budget-input').value = '';
-            
-            toggleModal(false);
-            switchView('view-input');
-        }
-
-        // LOAD DATA DARI DATABASE (READ)
-        async function loadCampaigns() {
-            try {
-                const response = await fetch('/api/campaigns');
-                const data = await response.json();
-                
-                const tbody = document.getElementById('campaign-list');
-                tbody.innerHTML = ''; 
-
-                if(data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Belum ada campaign.</td></tr>`;
-                    return;
-                }
-
-                data.forEach(camp => {
-                    // Mencegah division by zero
-                    const cpv = camp.total_views > 0 ? (camp.total_budget / camp.total_views) : 0;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="font-weight: bold;">${camp.campaign_name}</td>
-                            <td>${formatNumber(camp.total_views)}</td>
-                            <td>${formatNumber(camp.total_likes)}</td>
-                            <td>${formatRp(cpv)}</td>
-                        </tr>
-                    `;
-                });
-            } catch (error) {
-                console.error("Gagal memuat campaign", error);
-                document.getElementById('campaign-list').innerHTML = `<tr><td colspan="4">Gagal memuat data.</td></tr>`;
-            }
-        }
-
-        // PROSES ETL & SAVE TO DB (CREATE)
-        async function analyzeAndSave() {
-            const urlsRaw = document.getElementById('url-inputs').value;
-            const budget = parseFloat(document.getElementById('budget-input').value);
-            
-            if(!urlsRaw || isNaN(budget)) return alert('URL dan Budget wajib diisi dengan benar');
-            
-            const urls = urlsRaw.split(',').map(url => url.trim()).filter(url => url !== "");
-
-            document.getElementById('loading-state').style.display = 'block';
-            document.getElementById('btn-analisa').disabled = true;
-
-            try {
-                const response = await fetch('/api/analyze-and-save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        campaignName: currentCampaign.name,
-                        productName: currentCampaign.product,
-                        budget: budget,
-                        urls: urls 
-                    })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) throw new Error(result.error || 'Gagal eksekusi');
-
-                alert("Sukses! Data campaign telah dianalisis dan disimpan.");
-                
-                // Kembali ke halaman utama dan muat ulang tabel database
-                loadCampaigns();
-                switchView('view-homescreen');
-
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            } finally {
-                document.getElementById('loading-state').style.display = 'none';
-                document.getElementById('btn-analisa').disabled = false;
-            }
-        }
-
-        // Jalankan load data saat halaman pertama kali dibuka
-        document.addEventListener('DOMContentLoaded', loadCampaigns);
-
-        // FITUR EXPORT TO EXCEL
-        function exportToExcel() {
-            // 1. Ambil elemen tabel berdasarkan ID
-            const table = document.getElementById("campaign-table");
-            
-            // Cek apakah tabel masih kosong/loading
-            if (!table || table.rows.length <= 1 || table.innerText.includes("Memuat data") || table.innerText.includes("Belum ada")) {
-                return alert("Tidak ada data valid untuk dieksport.");
-            }
-
-            // 2. Konversi tabel HTML menjadi format Workbook Excel (SheetJS)
-            const wb = XLSX.utils.table_to_book(table, { sheet: "Performa_Campaign" });
-
-            // 3. Buat nama file dinamis dengan stempel waktu (YYYY-MM-DD)
-            const today = new Date();
-            const dateStr = today.toISOString().split('T')[0];
-            const fileName = `Dashboard_KOL_${dateStr}.xlsx`;
-
-            // 4. Picu proses unduh file
-            XLSX.writeFile(wb, fileName);
-        }
-    </script>
+<script src="/js/app.js"></script>
 </body>
 </html>
