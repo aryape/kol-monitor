@@ -4,33 +4,32 @@
     <meta charset="UTF-8">
     <title>Campaign Dashboard Monitor</title>
     <style>
-        /* CSS Dasar untuk mengatur view */
-        body { font-family: sans-serif; background: #f4f7fa; padding: 20px; }
-        .view-section { display: none; } /* Semua section disembunyikan default */
-        .view-section.active { display: block; } /* Hanya yang active yang muncul */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fa; padding: 20px; color: #333; }
+        .view-section { display: none; } 
+        .view-section.active { display: block; } 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
         .modal-overlay.active { display: flex; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
-        button { cursor: pointer; padding: 10px 15px; background: #f68b1f; color: white; border: none; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        th, td { padding: 15px 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background-color: #f8f9fa; font-size: 13px; text-transform: uppercase; color: #666; }
+        button { cursor: pointer; padding: 10px 20px; background: #f68b1f; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #f68b1f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-    <!-- 1. HOMESCREEN -->
+    <!-- HOMESCREEN -->
     <div id="view-homescreen" class="view-section active">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Dashboard Performa Campaign</h2>
-            <div>
-                <button>Monthly</button> <button>Weekly</button>
-                <button onclick="toggleModal(true)">+ Add Campaign</button>
-            </div>
+            <button onclick="toggleModal(true)">+ Add Campaign</button>
         </div>
         
-        <table id="campaign-table">
+        <table id = "campaign-table">
             <thead>
                 <tr>
                     <th>Nama Campaign</th>
@@ -40,62 +39,58 @@
                 </tr>
             </thead>
             <tbody id="campaign-list">
-                <!-- Data agregasi campaign akan dirender di sini -->
+                <tr><td colspan="4" style="text-align:center;">Memuat data dari database...</td></tr>
             </tbody>
         </table>
+
+        <!-- Tombol Export diletakkan di bawah tabel -->
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="exportToExcel()" style="background-color: #28a745;">
+                &#11123; Export to Spreadsheet
+            </button>
+        </div>
     </div>
 
-    <!-- 2. OVERLAY ADD CAMPAIGN -->
+    <!-- MODAL ADD CAMPAIGN -->
     <div id="modal-add" class="modal-overlay">
         <div class="modal-content">
             <h3>Add Campaign</h3>
             <label>Nama Campaign*</label><br>
-            <input type="text" id="new-campaign-name" style="width: 100%; margin-bottom: 15px;"><br>
-            <label>Produk*</label><br>
-            <input type="text" id="new-product-name" style="width: 100%; margin-bottom: 15px;"><br>
-            <button onclick="createCampaign()" style="width: 100%;">Tambah Campaign</button>
+            <input type="text" id="new-campaign-name" style="margin-bottom: 15px;"><br>
+            <label>Produk</label><br>
+            <input type="text" id="new-product-name" style="margin-bottom: 15px;"><br>
+            <button onclick="goToInput()" style="width: 100%;">Lanjut ke Input Data</button>
             <button onclick="toggleModal(false)" style="width: 100%; margin-top: 10px; background: #ccc;">Batal</button>
         </div>
     </div>
 
-    <!-- 3. INPUT DATA BASE -->
+    <!-- INPUT DATA BASE -->
     <div id="view-input" class="view-section">
-        <button onclick="switchView('view-homescreen')">&larr; Back to Home</button>
-        <h2 id="active-campaign-title">Input Data - Campaign Name</h2>
+        <button onclick="switchView('view-homescreen'); loadCampaigns();" style="background: #ccc; color: #333;">&larr; Back to Home</button>
+        <h2 id="active-campaign-title">Input Data</h2>
         
-        <div style="background: white; padding: 20px; margin-top: 20px; border-radius: 8px;">
+        <div style="background: white; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
             <label>Url Postingan (pisahkan dengan koma)*</label><br>
-            <textarea id="url-inputs" rows="4" style="width: 100%; margin-bottom: 15px;"></textarea><br>
+            <textarea id="url-inputs" rows="5" style="margin-bottom: 15px; font-family: monospace;"></textarea><br>
             
-            <label>Budget Campaign*</label><br>
-            <input type="number" id="budget-input" style="width: 100%; margin-bottom: 15px;"><br>
+            <label>Total Budget Campaign (Rp)*</label><br>
+            <input type="number" id="budget-input" style="margin-bottom: 15px;"><br>
             
-            <button onclick="analyzeMultiplePosts()" style="width: 100%;">Analisa Postingan</button>
+            <button id="btn-analisa" onclick="analyzeAndSave()" style="width: 100%;">Analisa & Simpan ke Database</button>
         </div>
 
-        <!-- Scraping on Process (Loading) -->
         <div id="loading-state" style="display: none; text-align: center; padding: 40px;">
             <div class="spinner"></div>
-            <p>Scraping data on progress. Please wait...</p>
+            <p>Menarik data dari TikTok dan menyimpan ke Database...<br><small>Proses ini mungkin memakan waktu 1-2 menit tergantung jumlah URL.</small></p>
         </div>
-
-        <!-- Scraping Done (Hasil) -->
-        <table id="result-table" style="display: none;">
-            <thead>
-                <tr>
-                    <th>Nama Akun</th>
-                    <th>Views</th>
-                    <th>Likes</th>
-                    <th>Cost/view</th>
-                </tr>
-            </thead>
-            <tbody id="result-list"></tbody>
-        </table>
     </div>
 
     <script>
-        // State Management
-        let currentCampaign = {};
+        let currentCampaign = { name: '', product: '' };
+
+        // Helper format angka
+        const formatNumber = (num) => num >= 1000 ? (num / 1000).toFixed(1) + 'K' : num;
+        const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(num);
 
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -106,80 +101,120 @@
             document.getElementById('modal-add').classList.toggle('active', show);
         }
 
-        function createCampaign() {
+        function goToInput() {
             const name = document.getElementById('new-campaign-name').value;
-            if(!name) return alert('Nama wajib diisi');
+            const product = document.getElementById('new-product-name').value;
+            if(!name) return alert('Nama Campaign wajib diisi');
             
-            // Simulasikan pembuatan pool di tabel Homescreen
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="cursor:pointer; color:blue;" onclick="goToInput('${name}')">${name} &gt;</td>
-                <td>-</td><td>-</td><td>-</td>
-            `;
-            document.getElementById('campaign-list').appendChild(tr);
-            toggleModal(false);
-        }
-
-        function goToInput(campaignName) {
-            currentCampaign.name = campaignName;
-            document.getElementById('active-campaign-title').innerText = `Input Data - ${campaignName}`;
+            currentCampaign = { name, product };
+            document.getElementById('active-campaign-title').innerText = `Input Data - ${name}`;
             
-            // Reset state
+            // Reset input form
             document.getElementById('url-inputs').value = '';
             document.getElementById('budget-input').value = '';
-            document.getElementById('result-table').style.display = 'none';
             
+            toggleModal(false);
             switchView('view-input');
         }
 
-        async function analyzeMultiplePosts() {
-            const urlsRaw = document.getElementById('url-inputs').value;
-            const budget = parseFloat(document.getElementById('budget-input').value);
-            
-            if(!urlsRaw || isNaN(budget)) return alert('URL dan Budget wajib diisi');
-            
-            // Bersihkan string URL dari spasi dan enter
-            const urls = urlsRaw.split(',').map(url => url.trim()).filter(url => url !== "");
-
-            // Munculkan Loading Screen
-            document.getElementById('loading-state').style.display = 'block';
-            document.getElementById('result-table').style.display = 'none';
-
+        // LOAD DATA DARI DATABASE (READ)
+        async function loadCampaigns() {
             try {
-                const response = await fetch('/api/analyze-multiple', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ urls: urls })
-                });
-
-                const results = await response.json();
+                const response = await fetch('/api/campaigns');
+                const data = await response.json();
                 
-                // Kalkulasi CPV (Asumsi: Budget dibagi rata ke semua postingan)
-                const budgetPerPost = budget / results.length;
+                const tbody = document.getElementById('campaign-list');
+                tbody.innerHTML = ''; 
 
-                // Render ke Tabel Hasil
-                const tbody = document.getElementById('result-list');
-                tbody.innerHTML = ''; // Bersihkan tabel
-                
-                results.forEach(item => {
-                    const cpv = item.views > 0 ? (budgetPerPost / item.views) : 0;
+                if(data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Belum ada campaign.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(camp => {
+                    // Mencegah division by zero
+                    const cpv = camp.total_views > 0 ? (camp.total_budget / camp.total_views) : 0;
+                    
                     tbody.innerHTML += `
                         <tr>
-                            <td>${item.author}</td>
-                            <td>${item.views.toLocaleString('id-ID')}</td>
-                            <td>${item.likes.toLocaleString('id-ID')}</td>
-                            <td>Rp ${cpv.toFixed(2)}</td>
+                            <td style="font-weight: bold;">${camp.campaign_name}</td>
+                            <td>${formatNumber(camp.total_views)}</td>
+                            <td>${formatNumber(camp.total_likes)}</td>
+                            <td>${formatRp(cpv)}</td>
                         </tr>
                     `;
                 });
+            } catch (error) {
+                console.error("Gagal memuat campaign", error);
+                document.getElementById('campaign-list').innerHTML = `<tr><td colspan="4">Gagal memuat data.</td></tr>`;
+            }
+        }
 
-                document.getElementById('loading-state').style.display = 'none';
-                document.getElementById('result-table').style.display = 'table';
+        // PROSES ETL & SAVE TO DB (CREATE)
+        async function analyzeAndSave() {
+            const urlsRaw = document.getElementById('url-inputs').value;
+            const budget = parseFloat(document.getElementById('budget-input').value);
+            
+            if(!urlsRaw || isNaN(budget)) return alert('URL dan Budget wajib diisi dengan benar');
+            
+            const urls = urlsRaw.split(',').map(url => url.trim()).filter(url => url !== "");
+
+            document.getElementById('loading-state').style.display = 'block';
+            document.getElementById('btn-analisa').disabled = true;
+
+            try {
+                const response = await fetch('/api/analyze-and-save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        campaignName: currentCampaign.name,
+                        productName: currentCampaign.product,
+                        budget: budget,
+                        urls: urls 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.error || 'Gagal eksekusi');
+
+                alert("Sukses! Data campaign telah dianalisis dan disimpan.");
+                
+                // Kembali ke halaman utama dan muat ulang tabel database
+                loadCampaigns();
+                switchView('view-homescreen');
 
             } catch (error) {
-                alert('Gagal mengambil data dari server');
+                alert(`Error: ${error.message}`);
+            } finally {
                 document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('btn-analisa').disabled = false;
             }
+        }
+
+        // Jalankan load data saat halaman pertama kali dibuka
+        document.addEventListener('DOMContentLoaded', loadCampaigns);
+
+        // FITUR EXPORT TO EXCEL
+        function exportToExcel() {
+            // 1. Ambil elemen tabel berdasarkan ID
+            const table = document.getElementById("campaign-table");
+            
+            // Cek apakah tabel masih kosong/loading
+            if (!table || table.rows.length <= 1 || table.innerText.includes("Memuat data") || table.innerText.includes("Belum ada")) {
+                return alert("Tidak ada data valid untuk dieksport.");
+            }
+
+            // 2. Konversi tabel HTML menjadi format Workbook Excel (SheetJS)
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Performa_Campaign" });
+
+            // 3. Buat nama file dinamis dengan stempel waktu (YYYY-MM-DD)
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            const fileName = `Dashboard_KOL_${dateStr}.xlsx`;
+
+            // 4. Picu proses unduh file
+            XLSX.writeFile(wb, fileName);
         }
     </script>
 </body>
