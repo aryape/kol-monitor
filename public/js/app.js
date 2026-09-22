@@ -172,7 +172,7 @@ async function loadTopAccounts() {
     }
     container.innerHTML = data.map(a => `
       <!-- Tambahkan onclick dan cursor: pointer di baris bawah ini -->
-      <div class="list-row" onclick="window.open('${escapeHtml(a.post_url)}', '_blank', 'noopener,noreferrer')" style="cursor: pointer;" title="Buka video TikTok">
+      <div class="list-row" onclick="window.open('https://www.tiktok.com/@${escapeHtml(a.author)}', '_blank')" style="cursor: pointer;" title="Buka profil TikTok">
         <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(a.author || 'Unknown')}</div>
