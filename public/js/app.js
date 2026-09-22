@@ -197,7 +197,7 @@ async function loadTopContent() {
     }
     container.innerHTML = data.map(c => `
       <div class="list-row">
-        <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
+        <img class="list-avatar" src="${c.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(truncateText(c.post_title))}</div>
           <div class="subtitle">${escapeHtml(c.author || 'Unknown')}</div>

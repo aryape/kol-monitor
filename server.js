@@ -282,7 +282,7 @@ app.get('/api/top-accounts', async (req, res) => {
                 SUM(likes + comments + shares + saves)::bigint AS total_engagement,
                 CASE WHEN SUM(views) > 0
                     THEN ROUND(100.0 * SUM(likes + comments + shares + saves) / SUM(views), 1)
-                    ELSE 0 END AS engagement_rate,
+                    ELSE 0 END AS engagement_rate
             FROM campaign_posts
             GROUP BY author
             ORDER BY total_gmv DESC, total_views DESC
@@ -300,7 +300,12 @@ app.get('/api/top-content', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const query = `
-            SELECT post_title, author, author_avatar, views, likes, post_url
+            SELECT post_title, 
+            author, 
+            author_avatar, 
+            views, 
+            likes, 
+            post_url
             FROM campaign_posts
             ORDER BY (views + likes) DESC
             LIMIT $1;
