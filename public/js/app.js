@@ -220,6 +220,9 @@ async function openDetail(campaignId) {
   state.activeCampaignId = campaignId;
   switchView('view-detail');
   const tbody = document.getElementById('detail-tbody');
+  // Reset status check-all setiap kali membuka detail baru
+  const checkAll = document.getElementById('check-all-posts');
+  if (checkAll) checkAll.checked = false;
   tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Memuat data postingan...</td></tr>`;
   document.getElementById('detail-campaign-label').textContent = 'Memuat...';
 
@@ -488,6 +491,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setSidebarActive('overview');
     loadHomescreen();
   });
+
+  // Logika untuk Check All / Uncheck All
+  const checkAllBtn = document.getElementById('check-all-posts');
+  if (checkAllBtn) {
+    checkAllBtn.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      // Cari semua checkbox postingan dan samakan statusnya dengan checkbox header
+      document.querySelectorAll('.post-checkbox').forEach(cb => {
+        cb.checked = isChecked;
+      });
+    });
+  }
 
   // Input view
   document.getElementById('btn-analisa').addEventListener('click', handleAnalyze);
