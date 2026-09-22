@@ -198,7 +198,7 @@ async function loadTopContent() {
     }
     container.innerHTML = data.map(c => `
       <!-- Tambahkan onclick dengan post_url dan cursor: pointer di baris bawah ini -->
-      <div class="list-row" onclick="window.open('${escapeHtml(c.post_url)}', '_blank')" style="cursor: pointer;" title="Buka video TikTok">
+      <div class="list-row" onclick="window.open('${escapeHtml(c.post_url)}', '_blank', 'noopener,noreferrer')" style="cursor: pointer;" title="Buka video TikTok">
         <img class="list-avatar" src="${c.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(truncateText(c.post_title))}</div>
