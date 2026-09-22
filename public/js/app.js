@@ -171,7 +171,8 @@ async function loadTopAccounts() {
       return;
     }
     container.innerHTML = data.map(a => `
-      <div class="list-row">
+      <!-- Tambahkan onclick dan cursor: pointer di baris bawah ini -->
+      <div class="list-row" onclick="window.open('https://www.tiktok.com/@${escapeHtml(a.author)}', '_blank')" style="cursor: pointer;" title="Buka profil TikTok">
         <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(a.author || 'Unknown')}</div>
@@ -196,7 +197,8 @@ async function loadTopContent() {
       return;
     }
     container.innerHTML = data.map(c => `
-      <div class="list-row">
+      <!-- Tambahkan onclick dengan post_url dan cursor: pointer di baris bawah ini -->
+      <div class="list-row" onclick="window.open('${escapeHtml(c.post_url)}', '_blank')" style="cursor: pointer;" title="Buka video TikTok">
         <img class="list-avatar" src="${c.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(truncateText(c.post_title))}</div>
@@ -248,7 +250,7 @@ async function openDetail(campaignId) {
         <td>${formatNumber(p.shares)}</td>
         <td>${formatRupiah(p.cpv)}</td>
         <td>${formatWIB(p.created_at)}</td>
-        <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">Lihat Post</a></td>
+        <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">View</a></td>
       </tr>
     `).join('');
   } catch (err) {
@@ -365,7 +367,7 @@ function renderInputResult(posts) {
       <td>${formatNumber(p.shares)}</td>
       <td>${formatRupiah(p.cpv)}</td>
       <td>${formatWIB(p.created_at)}</td>
-      <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">Lihat Post</a></td>
+      <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">View</a></td>
     </tr>
   `).join('');
 }
