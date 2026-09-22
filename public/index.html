@@ -129,6 +129,7 @@
     <section id="view-detail" class="view">
       <div class="page-header">
         <h1>Detail Postingan Campaign</h1>
+        <button class="btn-delete" id="btn-delete-selected" style="background-color: var(--orange-dark); margin-right: 8px;">Hapus Pilihan</button>
         <button class="btn-delete" id="btn-delete-campaign">Delete Campaign</button>
       </div>
 
@@ -142,6 +143,7 @@
           <table class="perf-table">
             <thead>
               <tr>
+                <th><input type="checkbox" id="check-all-posts"></th>
                 <th class="platform-col">
                   <div class="th-platform">Tiktok</div>
                   <div class="th-sub">Nama Akun</div>
@@ -152,6 +154,8 @@
                 <th>Save</th>
                 <th>Share</th>
                 <th>Cost/view</th>
+                <th>Created At</th>
+                <th>Link Postingan</th>
               </tr>
             </thead>
             <tbody id="detail-tbody">

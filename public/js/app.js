@@ -13,6 +13,17 @@ const state = {
 // ==========================================================================
 // HELPERS
 // ==========================================================================
+const formatWIB = (isoString) => {
+  if (!isoString) return '–';
+  const date = new Date(isoString);
+  return date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':') + ' WIB';
+};
+
+const truncateText = (text, maxLength = 60) => {
+  if (!text) return 'Tanpa judul';
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+};
+
 const formatNumber = (num) => {
   const n = Number(num) || 0;
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -47,14 +58,27 @@ async function api(path, options = {}) {
   return data;
 }
 
-function exportTableToExcel(tableEl, filenamePrefix) {
-  if (!tableEl || !tableEl.rows || tableEl.rows.length <= 1) {
-    alert('Tidak ada data valid untuk dieksport.');
-    return;
+function exportTableToExcel(tableEl, baseName, campaignName = '') {
+  if (!tableEl || !tableEl.rows || tableEl.rows.length <= 1) return alert('Tidak ada data valid untuk dieksport.');
+  
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(tableEl);
+  
+  if (campaignName) {
+    XLSX.utils.sheet_add_aoa(ws, [[`Nama Campaign: ${campaignName}`]], { origin: "A1" });
+    // Memindahkan data tabel turun 2 baris
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    XLSX.utils.sheet_add_aoa(ws, [], { origin: `A${range.e.r + 3}`});
   }
-  const wb = XLSX.utils.table_to_book(tableEl, { sheet: 'Performa' });
+  
+  XLSX.utils.book_append_sheet(wb, ws, 'Performa');
+  
   const dateStr = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `${filenamePrefix}_${dateStr}.xlsx`);
+  const finalFilename = campaignName 
+      ? `Detail Campaign_${campaignName}_${dateStr}.xlsx` 
+      : `${baseName}_${dateStr}.xlsx`;
+      
+  XLSX.writeFile(wb, finalFilename);
 }
 
 // ==========================================================================
@@ -148,7 +172,7 @@ async function loadTopAccounts() {
     }
     container.innerHTML = data.map(a => `
       <div class="list-row">
-        <div class="list-avatar"></div>
+        <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(a.author || 'Unknown')}</div>
         </div>
@@ -173,9 +197,9 @@ async function loadTopContent() {
     }
     container.innerHTML = data.map(c => `
       <div class="list-row">
-        <div class="list-avatar"></div>
+        <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
-          <div class="title">${escapeHtml(c.post_title || 'Tanpa judul')}</div>
+          <div class="title">${escapeHtml(truncateText(c.post_title))}</div>
           <div class="subtitle">${escapeHtml(c.author || 'Unknown')}</div>
         </div>
         <div class="list-metric">
@@ -196,7 +220,7 @@ async function openDetail(campaignId) {
   state.activeCampaignId = campaignId;
   switchView('view-detail');
   const tbody = document.getElementById('detail-tbody');
-  tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Memuat data postingan...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Memuat data postingan...</td></tr>`;
   document.getElementById('detail-campaign-label').textContent = 'Memuat...';
 
   try {
@@ -206,12 +230,13 @@ async function openDetail(campaignId) {
       `${campaign.campaign_name} - ${campaign.product_name || 'Tanpa produk'}`;
 
     if (posts.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Belum ada postingan pada campaign ini.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Belum ada postingan pada campaign ini.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = posts.map(p => `
       <tr>
+        <td><input type="checkbox" class="post-checkbox" value="${p.id}"></td>
         <td>${escapeHtml(p.author || 'Unknown')}</td>
         <td>${formatNumber(p.views)}</td>
         <td>${formatNumber(p.likes)}</td>
@@ -219,10 +244,12 @@ async function openDetail(campaignId) {
         <td>${formatNumber(p.saves)}</td>
         <td>${formatNumber(p.shares)}</td>
         <td>${formatRupiah(p.cpv)}</td>
+        <td>${formatWIB(p.created_at)}</td>
+        <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">Lihat Post</a></td>
       </tr>
     `).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Gagal memuat detail: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Gagal memuat detail: ${err.message}</td></tr>`;
   }
 }
 
@@ -237,6 +264,31 @@ async function handleDeleteCampaign() {
     loadHomescreen();
   } catch (err) {
     alert(`Gagal menghapus campaign: ${err.message}`);
+  }
+}
+
+async function handleDeleteSelectedPosts() {
+  const checkboxes = document.querySelectorAll('.post-checkbox:checked');
+  const checked = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  
+  if (checked.length === 0) {
+    return alert('Pilih minimal 1 konten untuk dihapus.');
+  }
+  
+  const ok = confirm(`Hapus ${checked.length} konten dari campaign ini? Tindakan ini tidak bisa dibatalkan.`);
+  if (!ok) return;
+  
+  try {
+    // Memanggil endpoint delete parsial yang sudah dibuat di server.js
+    await api('/api/campaign_posts/delete', { 
+      method: 'POST', 
+      body: JSON.stringify({ postIds: checked }) 
+    });
+    
+    // Reload tabel detail agar konten yang dihapus menghilang
+    openDetail(state.activeCampaignId); 
+  } catch (err) { 
+    alert(`Gagal menghapus postingan: ${err.message}`); 
   }
 }
 
@@ -301,6 +353,7 @@ function renderInputResult(posts) {
   card.style.display = 'block';
   tbody.innerHTML = posts.map(p => `
     <tr>
+      <td><input type="checkbox" class="post-checkbox" value="${p.id}"></td>
       <td>${escapeHtml(p.author || 'Unknown')}</td>
       <td>${formatNumber(p.views)}</td>
       <td>${formatNumber(p.likes)}</td>
@@ -308,6 +361,8 @@ function renderInputResult(posts) {
       <td>${formatNumber(p.saves)}</td>
       <td>${formatNumber(p.shares)}</td>
       <td>${formatRupiah(p.cpv)}</td>
+      <td>${formatWIB(p.created_at)}</td>
+      <td><a href="${escapeHtml(p.post_url)}" target="_blank" style="color:var(--orange);">Lihat Post</a></td>
     </tr>
   `).join('');
 }
@@ -416,11 +471,15 @@ document.addEventListener('DOMContentLoaded', () => {
     exportTableToExcel(document.querySelector('#view-homescreen .perf-table'), 'Performa_Campaign');
   });
   document.getElementById('btn-export-detail').addEventListener('click', () => {
-    exportTableToExcel(document.querySelector('#view-detail .perf-table'), 'Detail_Campaign');
+  exportTableToExcel(document.querySelector('#view-detail .perf-table'), 'Detail_Campaign', state.activeCampaign?.campaign_name);
   });
 
   // Detail view
   document.getElementById('btn-delete-campaign').addEventListener('click', handleDeleteCampaign);
+  const btnDeleteSelected = document.getElementById('btn-delete-selected');
+  if (btnDeleteSelected) {
+    btnDeleteSelected.addEventListener('click', handleDeleteSelectedPosts);
+  }
   document.getElementById('btn-add-more-posts').addEventListener('click', () => {
     openInput(state.activeCampaignId, state.activeCampaign);
   });

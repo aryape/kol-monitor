@@ -71,7 +71,7 @@ app.get('/api/campaigns', async (req, res) => {
                 COUNT(p.id)::int                      AS post_count
             FROM campaigns c
             LEFT JOIN campaign_posts p ON c.id = p.campaign_id
-            WHERE c.created_at >= $1
+            WHERE p.created_at >= $1 OR (c.status = 'draft' AND c.created_at >= $1)
             GROUP BY c.id
             ORDER BY c.created_at DESC;
         `;
@@ -152,6 +152,17 @@ app.delete('/api/campaigns/:id', async (req, res) => {
     }
 });
 
+app.post('/api/campaign_posts/delete', async (req, res) => {
+    try {
+        const { postIds } = req.body;
+        if (!postIds || postIds.length === 0) return res.json({ message: 'Tidak ada yang dihapus' });
+        await pool.query('DELETE FROM campaign_posts WHERE id = ANY($1::int[])', [postIds]);
+        res.json({ message: 'Postingan berhasil dihapus' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal menghapus postingan' });
+    }
+});
+
 // ------------------------------------------------------------------
 // 7. ENDPOINT ETL: Scraping Apify & simpan hasil ke campaign (Input Data)
 //    Dipanggil oleh tombol "Analisa Postingan"
@@ -204,27 +215,31 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
             const comments = data.commentCount || 0;
             const shares = data.shareCount || 0;
             const saves = data.collectCount || 0;
-            const gmv = data.gmv || 0; // Placeholder: perlu sumber data commerce/affiliate terpisah
+            const gmv = data.gmv || 0; 
             const cpv = views > 0 ? budgetPerPost / views : 0;
+            const avatar = data['authorMeta.avatar'] || data.authorMeta?.avatar || '';
+            const postCreatedAt = data.createTimeISO || new Date().toISOString();
 
             const inserted = await dbClient.query(
                 `INSERT INTO campaign_posts
-                    (campaign_id, platform, author, post_url, post_title, views, likes, comments, shares, saves, gmv, cpv)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-                 RETURNING *`,
+                    (campaign_id, platform, author, post_url, post_title, views, likes, comments, shares, saves, gmv, cpv, author_avatar, created_at)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+                RETURNING *`,
                 [
-                    id,
-                    platform,
-                    data.authorMeta?.name || data.ownerUsername || 'Unknown',
-                    data.webVideoUrl || data.url || '',
-                    data.text || data.caption || '',
-                    views,
-                    likes,
-                    comments,
-                    shares,
-                    saves,
-                    gmv,
-                    cpv,
+                    id, 
+                    platform, 
+                    data.authorMeta?.name || data.ownerUsername || 'Unknown', 
+                    data.webVideoUrl || data.url || '', 
+                    data.text || data.caption || '', 
+                    views, 
+                    likes, 
+                    comments, 
+                    shares, 
+                    saves, 
+                    gmv, 
+                    cpv, 
+                    avatar, 
+                    postCreatedAt
                 ]
             );
             insertedPosts.push(inserted.rows[0]);
@@ -261,12 +276,13 @@ app.get('/api/top-accounts', async (req, res) => {
         const query = `
             SELECT
                 author,
+                MAX(author_avatar) AS author_avatar,
                 SUM(gmv)::numeric AS total_gmv,
                 SUM(views)::bigint AS total_views,
                 SUM(likes + comments + shares + saves)::bigint AS total_engagement,
                 CASE WHEN SUM(views) > 0
                     THEN ROUND(100.0 * SUM(likes + comments + shares + saves) / SUM(views), 1)
-                    ELSE 0 END AS engagement_rate
+                    ELSE 0 END AS engagement_rate,
             FROM campaign_posts
             GROUP BY author
             ORDER BY total_gmv DESC, total_views DESC
@@ -284,7 +300,7 @@ app.get('/api/top-content', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const query = `
-            SELECT post_title, author, views, likes, post_url
+            SELECT post_title, author, author_avatar, views, likes, post_url
             FROM campaign_posts
             ORDER BY (views + likes) DESC
             LIMIT $1;
