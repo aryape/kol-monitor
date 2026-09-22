@@ -70,17 +70,10 @@ app.get('/api/campaigns', async (req, res) => {
                 COALESCE(SUM(p.shares), 0)::bigint    AS total_shares,
                 COUNT(p.id)::int                      AS post_count
             FROM campaigns c
-            
-            -- Filter dipindah ke klausa ON. COALESCE dipakai agar data 
-            -- lama (yang created_at nya NULL) mengambil tanggal campaign dibuat.
+
             LEFT JOIN campaign_posts p 
                 ON c.id = p.campaign_id 
-                AND COALESCE(p.created_at, c.created_at) >= $1
-                
-            -- Tampilkan campaign jika: (1) Campaign baru dibuat periode ini, 
-            -- ATAU (2) Campaign memiliki postingan pada periode ini
-            WHERE c.created_at >= $1 OR p.id IS NOT NULL
-            
+            WHERE c.created_at >= $1 OR c.status = 'draft'
             GROUP BY c.id
             ORDER BY c.created_at DESC;
         `;
