@@ -39,7 +39,53 @@ body {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  flex-shrink: 0;
+  
+  /* Logika Sembunyi & Melayang */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: -300px; /* Disembunyikan ke kiri layar */
+  z-index: 100;
+  transition: left 0.3s ease;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+}
+
+/* Class pemicu untuk memunculkan sidebar */
+.sidebar.show {
+  left: 0;
+}
+
+/* Latar belakang gelap saat sidebar terbuka */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+.sidebar-overlay.show {
+  display: block;
+}
+
+/* Style tombol hamburger */
+.btn-hamburger {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  color: var(--ink);
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: background 0.2s;
+}
+.btn-hamburger:hover {
+  background: var(--gray-100);
 }
 
 .sidebar-profile {
@@ -494,7 +540,6 @@ body {
 
 @media (max-width: 900px) {
   .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; border-radius: 0 0 24px 24px; }
   .main-content { padding: 24px; }
   .input-row, .two-col { grid-template-columns: 1fr; }
 }

@@ -447,6 +447,39 @@ async function handleSidebarInputData() {
 document.addEventListener('DOMContentLoaded', () => {
   loadHomescreen();
 
+  // ==========================================
+  // LOGIKA SIDEBAR HAMBURGER
+  // ==========================================
+  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+  const sidebar = document.querySelector('.sidebar');
+  
+  // Buat lapisan overlay secara dinamis
+  const overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  // Buka sidebar saat hamburger diklik
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      sidebar.classList.add('show');
+      overlay.classList.add('show');
+    });
+  }
+
+  // Tutup sidebar jika layar gelap (luar sidebar) diklik
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  });
+
+  // Tutup sidebar otomatis saat salah satu menu dipilih
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+    });
+  });
+  
   // Period toggle (Monthly / Weekly)
   document.querySelectorAll('#period-toggle .segmented-btn').forEach(btn => {
     btn.addEventListener('click', () => {
