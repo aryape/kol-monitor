@@ -51,8 +51,12 @@ function getPeriodStart(period) {
 // ------------------------------------------------------------------
 app.get('/api/campaigns', async (req, res) => {
     try {
-        const period = req.query.period === 'weekly' ? 'weekly' : 'monthly';
-        const periodStart = getPeriodStart(period);
+        const { start, end } = req.query;
+        
+        // Amankan dan format tanggal (end date diset ke 23:59:59 agar mencakup seluruh hari terakhir)
+        const startDate = start ? new Date(start) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const endDate = end ? new Date(end) : new Date();
+        endDate.setHours(23, 59, 59, 999);
 
         const query = `
             SELECT
@@ -70,14 +74,17 @@ app.get('/api/campaigns', async (req, res) => {
                 COALESCE(SUM(p.shares), 0)::bigint    AS total_shares,
                 COUNT(p.id)::int                      AS post_count
             FROM campaigns c
-
             LEFT JOIN campaign_posts p 
                 ON c.id = p.campaign_id 
-            WHERE c.created_at >= $1 OR c.status = 'draft'
+                -- Terapkan batas bawah dan batas atas
+                AND COALESCE(p.created_at, c.created_at) >= $1 
+                AND COALESCE(p.created_at, c.created_at) <= $2
+            -- Hanya tampilkan campaign yang relevan di rentang waktu tersebut
+            WHERE (c.created_at >= $1 AND c.created_at <= $2) OR p.id IS NOT NULL
             GROUP BY c.id
             ORDER BY c.created_at DESC;
         `;
-        const result = await pool.query(query, [periodStart]);
+        const result = await pool.query(query, [startDate.toISOString(), endDate.toISOString()]);
 
         const rows = result.rows.map(r => {
             const totalViews = Number(r.total_views);

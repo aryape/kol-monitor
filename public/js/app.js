@@ -2,11 +2,12 @@
 // STATE
 // ==========================================================================
 const state = {
-  period: 'monthly',
-  campaigns: [],           // hasil terakhir dari /api/campaigns (sesuai period aktif)
+  startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], 
+  endDate: new Date().toISOString().split('T')[0],
+  campaigns: [],           
   itemsPerPage: 10,
   itemsPerPageDetail: 10,
-  activeCampaignId: null,  // campaign yang sedang dibuka (detail / input)
+  activeCampaignId: null,  
   activeCampaign: null,
 };
 
@@ -102,7 +103,12 @@ async function loadHomescreen() {
   const tbody = document.getElementById('campaign-tbody');
   tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Memuat data campaign...</td></tr>`;
   try {
-    const data = await api(`/api/campaigns?period=${state.period}`);
+    const queryParams = new URLSearchParams({
+      start: state.startDate,
+      end: state.endDate
+    }).toString();
+    
+    const data = await api(`/api/campaigns?${queryParams}`);
     state.campaigns = data;
     renderCampaignTable();
   } catch (err) {
@@ -480,14 +486,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // Period toggle (Monthly / Weekly)
-  document.querySelectorAll('#period-toggle .segmented-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#period-toggle .segmented-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.period = btn.dataset.period;
-      loadHomescreen();
-    });
+  // Set default value ke input HTML saat halaman dimuat
+  document.getElementById('filter-start').value = state.startDate;
+  document.getElementById('filter-end').value = state.endDate;
+
+  // Event listener untuk tombol Terapkan
+  document.getElementById('btn-apply-filter').addEventListener('click', () => {
+    const startVal = document.getElementById('filter-start').value;
+    const endVal = document.getElementById('filter-end').value;
+    
+    if (!startVal || !endVal) return alert('Silakan lengkapi rentang tanggal.');
+    if (new Date(startVal) > new Date(endVal)) return alert('Tanggal mulai tidak boleh lebih dari tanggal akhir.');
+
+    state.startDate = startVal;
+    state.endDate = endVal;
+    loadHomescreen(); // Muat ulang data berdasarkan filter baru
   });
 
   // Items per page
