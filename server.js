@@ -282,6 +282,13 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
 app.get('/api/top-accounts', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
+        const { start, end } = req.query;
+
+        // Tangkap tanggal, beri fallback jika tidak ada
+        const startDate = start ? new Date(start) : new Date(0);
+        const endDate = end ? new Date(end) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+
         const query = `
             SELECT
                 author,
@@ -293,11 +300,13 @@ app.get('/api/top-accounts', async (req, res) => {
                     THEN ROUND(100.0 * SUM(likes + comments + shares + saves) / SUM(views), 1)
                     ELSE 0 END AS engagement_rate
             FROM campaign_posts
+            -- Filter berdasarkan tanggal postingan dibuat
+            WHERE created_at >= $2 AND created_at <= $3
             GROUP BY author
             ORDER BY total_gmv DESC, total_views DESC
             LIMIT $1;
         `;
-        const result = await pool.query(query, [limit]);
+        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString()]);
         res.json(result.rows);
     } catch (error) {
         console.error('DB Error [GET /api/top-accounts]:', error);
@@ -308,6 +317,12 @@ app.get('/api/top-accounts', async (req, res) => {
 app.get('/api/top-content', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
+        const { start, end } = req.query;
+
+        const startDate = start ? new Date(start) : new Date(0);
+        const endDate = end ? new Date(end) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+
         const query = `
             SELECT post_title, 
             author, 
@@ -316,10 +331,12 @@ app.get('/api/top-content', async (req, res) => {
             likes, 
             post_url
             FROM campaign_posts
+            -- Filter berdasarkan tanggal postingan dibuat
+            WHERE created_at >= $2 AND created_at <= $3
             ORDER BY (views + likes) DESC
             LIMIT $1;
         `;
-        const result = await pool.query(query, [limit]);
+        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString()]);
         res.json(result.rows);
     } catch (error) {
         console.error('DB Error [GET /api/top-content]:', error);

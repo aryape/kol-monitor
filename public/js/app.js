@@ -171,14 +171,21 @@ function escapeHtml(str) {
 async function loadTopAccounts() {
   const container = document.getElementById('top-account-list');
   try {
-    const data = await api('/api/top-accounts?limit=5');
+    // Tambahkan parameter tanggal
+    const queryParams = new URLSearchParams({
+      limit: 5,
+      start: state.startDate,
+      end: state.endDate
+    }).toString();
+    
+    const data = await api(`/api/top-accounts?${queryParams}`);
+    
     if (data.length === 0) {
-      container.innerHTML = `<div class="empty-cell">Belum ada data akun. Analisa postingan pertama untuk melihat top account.</div>`;
+      container.innerHTML = `<div class="empty-cell">Belum ada data akun pada rentang waktu ini.</div>`;
       return;
     }
     container.innerHTML = data.map(a => `
-      <!-- Tambahkan onclick dan cursor: pointer di baris bawah ini -->
-      <div class="list-row" onclick="window.open('https://www.tiktok.com/@${escapeHtml(a.author)}', '_blank')" style="cursor: pointer;" title="Buka profil TikTok">
+      <div class="list-row" onclick="window.open('https://www.tiktok.com/@${escapeHtml(a.author)}', '_blank', 'noopener,noreferrer')" style="cursor: pointer;" title="Buka profil TikTok">
         <img class="list-avatar" src="${a.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
           <div class="title">${escapeHtml(a.author || 'Unknown')}</div>
@@ -197,13 +204,20 @@ async function loadTopAccounts() {
 async function loadTopContent() {
   const container = document.getElementById('top-content-list');
   try {
-    const data = await api('/api/top-content?limit=5');
+    // Tambahkan parameter tanggal
+    const queryParams = new URLSearchParams({
+      limit: 5,
+      start: state.startDate,
+      end: state.endDate
+    }).toString();
+    
+    const data = await api(`/api/top-content?${queryParams}`);
+    
     if (data.length === 0) {
-      container.innerHTML = `<div class="empty-cell">Belum ada data konten. Analisa postingan pertama untuk melihat top content.</div>`;
+      container.innerHTML = `<div class="empty-cell">Belum ada data konten pada rentang waktu ini.</div>`;
       return;
     }
     container.innerHTML = data.map(c => `
-      <!-- Tambahkan onclick dengan post_url dan cursor: pointer di baris bawah ini -->
       <div class="list-row" onclick="window.open('${escapeHtml(c.post_url)}', '_blank', 'noopener,noreferrer')" style="cursor: pointer;" title="Buka video TikTok">
         <img class="list-avatar" src="${c.author_avatar || ''}" style="object-fit: cover;" onerror="this.style.display='none'">
         <div class="list-info">
