@@ -9,6 +9,7 @@ const state = {
   itemsPerPageDetail: 10,
   activeCampaignId: null,  
   activeCampaign: null,
+  activePosts: [],
 };
 
 // ==========================================================================
@@ -170,6 +171,7 @@ function escapeHtml(str) {
 
 async function loadTopAccounts() {
   const container = document.getElementById('top-account-list');
+  container.innerHTML = `<div class="empty-cell">Memuat data akun...</div>`;
   try {
     // Tambahkan parameter tanggal
     const queryParams = new URLSearchParams({
@@ -203,6 +205,7 @@ async function loadTopAccounts() {
 
 async function loadTopContent() {
   const container = document.getElementById('top-content-list');
+  container.innerHTML = `<div class="empty-cell">Memuat data konten...</div>`;
   try {
     // Tambahkan parameter tanggal
     const queryParams = new URLSearchParams({
@@ -242,40 +245,51 @@ async function openDetail(campaignId) {
   state.activeCampaignId = campaignId;
   switchView('view-detail');
   const tbody = document.getElementById('detail-tbody');
-  // Reset status check-all setiap kali membuka detail baru
-  const checkAll = document.getElementById('check-all-posts');
-  if (checkAll) checkAll.checked = false;
   tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Memuat data postingan...</td></tr>`;
   document.getElementById('detail-campaign-label').textContent = 'Memuat...';
 
   try {
     const { campaign, posts } = await api(`/api/campaigns/${campaignId}`);
     state.activeCampaign = campaign;
+    state.activePosts = posts; // Simpan data mentah ke state
+    
     document.getElementById('detail-campaign-label').textContent =
       `${campaign.campaign_name} - ${campaign.product_name || 'Tanpa produk'}`;
 
-    if (posts.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Belum ada postingan pada campaign ini.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = posts.map(p => `
-      <tr>
-        <td><input type="checkbox" class="post-checkbox" value="${p.id}"></td>
-        <td>${escapeHtml(p.author || 'Unknown')}</td>
-        <td>${formatNumber(p.views)}</td>
-        <td>${formatNumber(p.likes)}</td>
-        <td>${formatNumber(p.comments)}</td>
-        <td>${formatNumber(p.saves)}</td>
-        <td>${formatNumber(p.shares)}</td>
-        <td>${formatRupiah(p.cpv)}</td>
-        <td>${formatWIB(p.created_at)}</td>
-        <td><a href="${escapeHtml(p.post_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--orange);">View</a></td>
-      </tr>
-    `).join('');
+    renderDetailTable(); // Panggil fungsi render
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Gagal memuat detail: ${err.message}</td></tr>`;
   }
+}
+
+function renderDetailTable() {
+  const tbody = document.getElementById('detail-tbody');
+  // Potong array data sesuai limitasi dari state dropdown
+  const posts = state.activePosts.slice(0, state.itemsPerPageDetail);
+
+  if (posts.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Belum ada postingan pada campaign ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = posts.map(p => `
+    <tr>
+      <td><input type="checkbox" class="post-checkbox" value="${p.id}"></td>
+      <td>${escapeHtml(p.author || 'Unknown')}</td>
+      <td>${formatNumber(p.views)}</td>
+      <td>${formatNumber(p.likes)}</td>
+      <td>${formatNumber(p.comments)}</td>
+      <td>${formatNumber(p.saves)}</td>
+      <td>${formatNumber(p.shares)}</td>
+      <td>${formatRupiah(p.cpv)}</td>
+      <td>${formatWIB(p.created_at)}</td>
+      <td><a href="${escapeHtml(p.post_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--orange);">Lihat Post</a></td>
+    </tr>
+  `).join('');
+  
+  // Reset checkbox all saat tabel dirender ulang
+  const checkAll = document.getElementById('check-all-posts');
+  if (checkAll) checkAll.checked = false;
 }
 
 async function handleDeleteCampaign() {
@@ -293,7 +307,7 @@ async function handleDeleteCampaign() {
 }
 
 async function handleDeleteSelectedPosts() {
-  const checkboxes = document.querySelectorAll('.post-checkbox:checked');
+  const checkboxes = document.querySelectorAll('#detail-tbody .post-checkbox:checked');
   const checked = Array.from(checkboxes).map(cb => parseInt(cb.value));
   
   if (checked.length === 0) {
@@ -523,6 +537,15 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCampaignTable();
   });
 
+  // Items per page Detail
+  const itemsPerPageDetail = document.getElementById('items-per-page-detail');
+  if (itemsPerPageDetail) {
+    itemsPerPageDetail.addEventListener('change', (e) => {
+      state.itemsPerPageDetail = parseInt(e.target.value);
+      renderDetailTable(); // Render ulang tabel saat dropdown diubah
+    });
+  }
+
   // + Add campaign
   document.getElementById('btn-open-add-campaign').addEventListener('click', () => toggleAddCampaignModal(true));
   document.getElementById('btn-cancel-campaign').addEventListener('click', () => toggleAddCampaignModal(false));
@@ -560,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAllBtn.addEventListener('change', (e) => {
       const isChecked = e.target.checked;
       // Cari semua checkbox postingan dan samakan statusnya dengan checkbox header
-      document.querySelectorAll('.post-checkbox').forEach(cb => {
+      document.querySelectorAll('#detail-tbody .post-checkbox').forEach(cb => {
         cb.checked = isChecked;
       });
     });
