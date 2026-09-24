@@ -10,6 +10,8 @@ const state = {
   activeCampaignId: null,  
   activeCampaign: null,
   activePosts: [],
+  sortConfig: { key: 'created_at', direction: 'desc' }, 
+  searchQuery: '',
 };
 
 // ==========================================================================
@@ -264,14 +266,41 @@ async function openDetail(campaignId) {
 
 function renderDetailTable() {
   const tbody = document.getElementById('detail-tbody');
-  // Potong array data sesuai limitasi dari state dropdown
-  const posts = state.activePosts.slice(0, state.itemsPerPageDetail);
+  
+  // 1. Salin array agar data asli tidak rusak
+  let result = [...state.activePosts];
+
+  // 2. Terapkan Filter Pencarian (berdasarkan nama akun)
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    result = result.filter(p => (p.author || '').toLowerCase().includes(q));
+  }
+
+  // 3. Terapkan Sorting
+  if (state.sortConfig.key) {
+    result.sort((a, b) => {
+      let valA = a[state.sortConfig.key];
+      let valB = b[state.sortConfig.key];
+      
+      // Standarisasi perbandingan (angka vs teks)
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      if (valA < valB) return state.sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return state.sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // 4. Potong data sesuai limitasi dropdown
+  const posts = result.slice(0, state.itemsPerPageDetail);
 
   if (posts.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Belum ada postingan pada campaign ini.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Belum ada postingan yang sesuai.</td></tr>`;
     return;
   }
 
+  // 5. Render HTML
   tbody.innerHTML = posts.map(p => `
     <tr>
       <td><input type="checkbox" class="post-checkbox" value="${p.id}"></td>
@@ -287,7 +316,6 @@ function renderDetailTable() {
     </tr>
   `).join('');
   
-  // Reset checkbox all saat tabel dirender ulang
   const checkAll = document.getElementById('check-all-posts');
   if (checkAll) checkAll.checked = false;
 }
@@ -530,6 +558,31 @@ document.addEventListener('DOMContentLoaded', () => {
     state.endDate = endVal;
     loadHomescreen(); // Muat ulang data berdasarkan filter baru
   });
+
+  // --- SORTING TABLE HEADERS ---
+  document.querySelectorAll('#view-detail th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      // Jika kolom yang diklik sama, ubah arah panahnya (asc/desc)
+      if (state.sortConfig.key === key) {
+        state.sortConfig.direction = state.sortConfig.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Jika kolom baru yang diklik, set otomatis ke menurun (desc)
+        state.sortConfig.key = key;
+        state.sortConfig.direction = 'desc';
+      }
+      renderDetailTable(); // Render ulang dengan urutan baru
+    });
+  });
+
+  // --- FILTER SEARCH BAR ---
+  const searchDetailInput = document.getElementById('search-detail-input');
+  if (searchDetailInput) {
+    searchDetailInput.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      renderDetailTable(); // Render tabel secara real-time saat mengetik
+    });
+  }
 
   // Items per page
   document.getElementById('items-per-page').addEventListener('change', (e) => {
