@@ -293,9 +293,23 @@ function renderDetailTable() {
       let valA = a[state.sortConfig.key];
       let valB = b[state.sortConfig.key];
       
-      // Standarisasi perbandingan (angka vs teks)
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
+      // Penanganan nilai kosong (null/undefined diubah menjadi string kosong)
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+
+      // Deteksi apakah nilai tersebut murni angka (menangkap string angka dari PostgreSQL)
+      const isNumA = valA !== '' && !isNaN(Number(valA));
+      const isNumB = valB !== '' && !isNaN(Number(valB));
+
+      if (isNumA && isNumB) {
+        // Konversi ke format Number agar perbandingan matematika berjalan akurat
+        valA = Number(valA);
+        valB = Number(valB);
+      } else {
+        // Biarkan format ISO String (created_at) dan teks akun diproses secara alfabetis
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+      }
 
       if (valA < valB) return state.sortConfig.direction === 'asc' ? -1 : 1;
       if (valA > valB) return state.sortConfig.direction === 'asc' ? 1 : -1;
@@ -618,15 +632,26 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#view-detail th[data-sort]').forEach(th => {
     th.addEventListener('click', () => {
       const key = th.dataset.sort;
-      // Jika kolom yang diklik sama, ubah arah panahnya (asc/desc)
+      
+      // Pergantian arah ascending (asc) / descending (desc)
       if (state.sortConfig.key === key) {
         state.sortConfig.direction = state.sortConfig.direction === 'asc' ? 'desc' : 'asc';
       } else {
-        // Jika kolom baru yang diklik, set otomatis ke menurun (desc)
         state.sortConfig.key = key;
         state.sortConfig.direction = 'desc';
       }
-      renderDetailTable(); // Render ulang dengan urutan baru
+
+      // Update Visual Panah agar pengguna tahu tabel sedang diurutkan
+      document.querySelectorAll('#view-detail th[data-sort]').forEach(el => {
+        // Reset semua header ke panah default (↕)
+        el.innerHTML = el.innerHTML.replace(/↓|↑/g, '↕');
+      });
+      
+      // Berikan panah arah pada header yang sedang aktif diklik
+      const activeArrow = state.sortConfig.direction === 'asc' ? '↑' : '↓';
+      th.innerHTML = th.innerHTML.replace(/↕|↓|↑/g, activeArrow);
+
+      renderDetailTable(); // Render ulang tabel dengan urutan baru
     });
   });
 
