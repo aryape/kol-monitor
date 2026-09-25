@@ -105,14 +105,25 @@ app.get('/api/campaigns', async (req, res) => {
 app.get('/api/campaigns/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { start, end } = req.query;
+
+        // Tangkap dan format tanggal (end date diset ke 23:59:59 agar presisi)
+        const startDate = start ? new Date(start) : new Date(0);
+        const endDate = end ? new Date(end) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+
         const campaignResult = await pool.query('SELECT * FROM campaigns WHERE id = $1', [id]);
         if (campaignResult.rows.length === 0) {
             return res.status(404).json({ error: 'Campaign tidak ditemukan' });
         }
 
+        // Tambahkan filter rentang waktu pada query pencarian postingan
         const postsResult = await pool.query(
-            `SELECT * FROM campaign_posts WHERE campaign_id = $1 ORDER BY scraped_at DESC`,
-            [id]
+            `SELECT * FROM campaign_posts 
+             WHERE campaign_id = $1 
+             AND created_at >= $2 AND created_at <= $3
+             ORDER BY created_at DESC`,
+            [id, startDate.toISOString(), endDate.toISOString()]
         );
 
         res.json({ campaign: campaignResult.rows[0], posts: postsResult.rows });

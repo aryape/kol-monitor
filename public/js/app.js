@@ -251,7 +251,15 @@ async function openDetail(campaignId) {
   document.getElementById('detail-campaign-label').textContent = 'Memuat...';
 
   try {
-    const { campaign, posts } = await api(`/api/campaigns/${campaignId}`);
+    // Tambahkan parameter tanggal dari state global
+    const queryParams = new URLSearchParams({
+      start: state.startDate,
+      end: state.endDate
+    }).toString();
+
+    // Sertakan queryParams ke dalam endpoint API
+    const { campaign, posts } = await api(`/api/campaigns/${campaignId}?${queryParams}`);
+    
     state.activeCampaign = campaign;
     state.activePosts = posts; // Simpan data mentah ke state
     
