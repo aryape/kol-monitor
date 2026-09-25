@@ -168,17 +168,18 @@
             <thead>
               <tr>
                 <th><input type="checkbox" id="check-all-posts"></th>
-                <th class="platform-col">
+                <!-- Tambahkan atribut data-sort dan simbol ↕ -->
+                <th class="platform-col" data-sort="author" style="cursor: pointer;" title="Urutkan berdasar Akun">
                   <div class="th-platform">Tiktok</div>
-                  <div class="th-sub">Nama Akun</div>
+                  <div class="th-sub">Nama Akun ↕</div>
                 </th>
-                <th>Views</th>
-                <th>Likes</th>
-                <th>Comment</th>
-                <th>Save</th>
-                <th>Share</th>
-                <th>Cost/view</th>
-                <th>Created At</th>
+                <th data-sort="views" style="cursor: pointer;" title="Urutkan berdasar Views">Views ↕</th>
+                <th data-sort="likes" style="cursor: pointer;" title="Urutkan berdasar Likes">Likes ↕</th>
+                <th data-sort="comments" style="cursor: pointer;" title="Urutkan berdasar Comment">Comment ↕</th>
+                <th data-sort="saves" style="cursor: pointer;" title="Urutkan berdasar Save">Save ↕</th>
+                <th data-sort="shares" style="cursor: pointer;" title="Urutkan berdasar Share">Share ↕</th>
+                <th data-sort="cpv" style="cursor: pointer;" title="Urutkan berdasar Cost/view">Cost/view ↕</th>
+                <th data-sort="created_at" style="cursor: pointer;" title="Urutkan berdasar Waktu">Created At ↕</th>
                 <th>Link Postingan</th>
               </tr>
             </thead>
