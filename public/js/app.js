@@ -131,7 +131,7 @@ function renderCampaignTable() {
     return;
   }
 
-  tbody.innerHTML = rows.map(c => {
+tbody.innerHTML = rows.map(c => {
     const hasData = c.status === 'active' && Number(c.post_count) > 0;
     const dash = '<span class="dash">–</span>';
     return `
@@ -145,6 +145,9 @@ function renderCampaignTable() {
         <td>${hasData ? formatNumber(c.total_saves) : dash}</td>
         <td>${hasData ? formatNumber(c.total_shares) : dash}</td>
         <td>${hasData && c.avg_cost_per_view !== null ? formatRupiah(c.avg_cost_per_view) : dash}</td>
+        <!-- Kolom Baru -->
+        <td>${hasData && c.cpe !== null ? formatRupiah(c.cpe) : dash}</td>
+        <td>${hasData ? `<span style="color:var(--green); font-weight:600;">${c.er}%</span>` : dash}</td>
       </tr>
     `;
   }).join('');
@@ -195,7 +198,7 @@ async function loadTopAccounts() {
           <div class="title">${escapeHtml(a.author || 'Unknown')}</div>
         </div>
         <div class="list-metric">
-          <div class="value">${formatRupiahJuta(a.total_gmv)}</div>
+          <div class="value">${formatNumber(a.total_engagement)} Eng</div>
           <div class="badge">ER ${a.engagement_rate}%</div>
         </div>
       </div>
@@ -566,6 +569,50 @@ document.addEventListener('DOMContentLoaded', () => {
     state.endDate = endVal;
     loadHomescreen(); // Muat ulang data berdasarkan filter baru
   });
+
+  // --- QUICK PRESETS DATE FILTER ---
+  const presetSelect = document.getElementById('quick-date-preset');
+  const startInput = document.getElementById('filter-start');
+  const endInput = document.getElementById('filter-end');
+
+  if (presetSelect) {
+    presetSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'custom') return; // Biarkan user input sendiri jika memilih custom
+
+      const today = new Date();
+      let start, end;
+
+      if (val === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = today;
+      } else if (val === 'last_7_days') {
+        start = new Date();
+        start.setDate(today.getDate() - 7);
+        end = today;
+      } else if (val === 'all_time') {
+        start = new Date(2000, 0, 1); // Titik awal yang sangat jauh
+        end = today;
+      }
+
+      if (start && end) {
+        // Trik menyesuaikan Timezone lokal agar ISO string tidak mundur 1 hari
+        const offset = start.getTimezoneOffset() * 60000;
+        startInput.value = new Date(start - offset).toISOString().split('T')[0];
+        endInput.value = new Date(end - offset).toISOString().split('T')[0];
+        
+        // Simulasikan klik tombol Terapkan secara otomatis
+        document.getElementById('btn-apply-filter').click();
+      }
+    });
+
+    // Reset dropdown ke "Custom Date" jika user mengubah input kalender secara manual
+    [startInput, endInput].forEach(input => {
+      input.addEventListener('change', () => {
+        presetSelect.value = 'custom';
+      });
+    });
+  }
 
   // --- SORTING TABLE HEADERS ---
   document.querySelectorAll('#view-detail th[data-sort]').forEach(th => {

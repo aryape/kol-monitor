@@ -52,34 +52,26 @@ function getPeriodStart(period) {
 app.get('/api/campaigns', async (req, res) => {
     try {
         const { start, end } = req.query;
-        
-        // Amankan dan format tanggal (end date diset ke 23:59:59 agar mencakup seluruh hari terakhir)
         const startDate = start ? new Date(start) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
 
         const query = `
             SELECT
-                c.id,
-                c.campaign_name,
-                c.product_name,
-                c.platform,
-                c.status,
-                c.total_budget,
-                c.created_at,
+                c.id, c.campaign_name, c.product_name, c.platform, c.status, c.total_budget, c.created_at,
                 COALESCE(SUM(p.views), 0)::bigint    AS total_views,
                 COALESCE(SUM(p.likes), 0)::bigint     AS total_likes,
                 COALESCE(SUM(p.comments), 0)::bigint  AS total_comments,
                 COALESCE(SUM(p.saves), 0)::bigint     AS total_saves,
                 COALESCE(SUM(p.shares), 0)::bigint    AS total_shares,
+                -- Tambahkan total engagement
+                COALESCE(SUM(p.likes + p.comments + p.saves + p.shares), 0)::bigint AS total_engagement,
                 COUNT(p.id)::int                      AS post_count
             FROM campaigns c
             LEFT JOIN campaign_posts p 
                 ON c.id = p.campaign_id 
-                -- Terapkan batas bawah dan batas atas
                 AND COALESCE(p.created_at, c.created_at) >= $1 
                 AND COALESCE(p.created_at, c.created_at) <= $2
-            -- Hanya tampilkan campaign yang relevan di rentang waktu tersebut
             WHERE (c.created_at >= $1 AND c.created_at <= $2) OR p.id IS NOT NULL
             GROUP BY c.id
             ORDER BY c.created_at DESC;
@@ -88,13 +80,19 @@ app.get('/api/campaigns', async (req, res) => {
 
         const rows = result.rows.map(r => {
             const totalViews = Number(r.total_views);
-            const avgCostPerView = totalViews > 0 ? Number(r.total_budget) / totalViews : null;
-            return { ...r, avg_cost_per_view: avgCostPerView };
+            const totalEng = Number(r.total_engagement);
+            const budget = Number(r.total_budget);
+
+            const avgCostPerView = totalViews > 0 ? budget / totalViews : null;
+            // Kalkulasi CPE dan ER baru
+            const cpe = totalEng > 0 ? budget / totalEng : null;
+            const er = totalViews > 0 ? (totalEng / totalViews * 100).toFixed(2) : 0;
+
+            return { ...r, avg_cost_per_view: avgCostPerView, cpe, er };
         });
 
         res.json(rows);
     } catch (error) {
-        console.error('DB Error [GET /api/campaigns]:', error);
         res.status(500).json({ error: 'Gagal mengambil data campaign' });
     }
 });
@@ -294,8 +292,6 @@ app.get('/api/top-accounts', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const { start, end } = req.query;
-
-        // Tangkap tanggal, beri fallback jika tidak ada
         const startDate = start ? new Date(start) : new Date(0);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
@@ -304,23 +300,21 @@ app.get('/api/top-accounts', async (req, res) => {
             SELECT
                 author,
                 MAX(author_avatar) AS author_avatar,
-                SUM(gmv)::numeric AS total_gmv,
                 SUM(views)::bigint AS total_views,
                 SUM(likes + comments + shares + saves)::bigint AS total_engagement,
                 CASE WHEN SUM(views) > 0
                     THEN ROUND(100.0 * SUM(likes + comments + shares + saves) / SUM(views), 1)
                     ELSE 0 END AS engagement_rate
             FROM campaign_posts
-            -- Filter berdasarkan tanggal postingan dibuat
             WHERE created_at >= $2 AND created_at <= $3
             GROUP BY author
-            ORDER BY total_gmv DESC, total_views DESC
+            -- Ubah urutan menjadi berdasarkan engagement tertinggi
+            ORDER BY total_engagement DESC, total_views DESC
             LIMIT $1;
         `;
         const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString()]);
         res.json(result.rows);
     } catch (error) {
-        console.error('DB Error [GET /api/top-accounts]:', error);
         res.status(500).json({ error: 'Gagal mengambil top account' });
     }
 });

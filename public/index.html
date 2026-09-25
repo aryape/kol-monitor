@@ -57,6 +57,14 @@
         <div class="header-actions">
             <!-- Custom Date Range Filter -->
             <div class="date-filter-group" style="display: flex; gap: 8px; align-items: center; background: #fff; padding: 4px; border: 1px solid var(--gray-200); border-radius: 12px;">
+                <!-- Dropdown Quick Presets -->
+                <select id="quick-date-preset" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer; color: var(--ink);">
+                <option value="custom">Custom Date</option>
+                <option value="this_month">Bulan Ini</option>
+                <option value="last_7_days">7 Hari Terakhir</option>
+                <option value="all_time">Semua Waktu</option>
+                </select>
+                
                 <input type="date" id="filter-start" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
                 <span style="color: var(--gray-400); font-weight: 500;">-</span>
                 <input type="date" id="filter-end" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
@@ -81,10 +89,13 @@
                 <th>Total<br>Save</th>
                 <th>Total<br>Share</th>
                 <th>Avg. Cost/<br>View</th>
+                <!-- Tambahan Kolom Baru -->
+                <th>CPE<br>(Cost/Eng)</th>
+                <th>ER<br>(%)</th>
               </tr>
             </thead>
             <tbody id="campaign-tbody">
-              <tr><td colspan="7" class="empty-cell">Memuat data campaign...</td></tr>
+              <tr><td colspan="9" class="empty-cell">Memuat data campaign...</td></tr>
             </tbody>
           </table>
         </div>
@@ -107,7 +118,7 @@
           <div class="list-card-header">
             <div>
               <div class="list-card-title">Top Account</div>
-              <div class="list-card-sub">Based from GMV</div>
+              <div class="list-card-sub">Based from Total Engagement</div>
             </div>
             <div class="list-card-icon">🏆</div>
           </div>
