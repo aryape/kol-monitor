@@ -51,20 +51,29 @@ function getPeriodStart(period) {
 // ------------------------------------------------------------------
 app.get('/api/campaigns', async (req, res) => {
     try {
-        const { start, end } = req.query;
+        const { start, end, category } = req.query; // Tambahan category
         const startDate = start ? new Date(start) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
 
+        // Siapkan penampung query untuk filter kategori
+        let catQuery = "";
+        const queryParams = [startDate.toISOString(), endDate.toISOString()];
+        
+        if (category && category !== 'all') {
+            catQuery = `AND c.category = $3`;
+            queryParams.push(category);
+        }
+
         const query = `
             SELECT
-                c.id, c.campaign_name, c.product_name, c.platform, c.status, c.total_budget, c.created_at,
+                c.id, c.campaign_name, c.product_name, c.platform, c.status, c.total_budget, c.created_at, 
+                c.category, -- Tambahan kolom category
                 COALESCE(SUM(p.views), 0)::bigint    AS total_views,
                 COALESCE(SUM(p.likes), 0)::bigint     AS total_likes,
                 COALESCE(SUM(p.comments), 0)::bigint  AS total_comments,
                 COALESCE(SUM(p.saves), 0)::bigint     AS total_saves,
                 COALESCE(SUM(p.shares), 0)::bigint    AS total_shares,
-                -- Tambahkan total engagement
                 COALESCE(SUM(p.likes + p.comments + p.saves + p.shares), 0)::bigint AS total_engagement,
                 COUNT(p.id)::int                      AS post_count
             FROM campaigns c
@@ -72,19 +81,20 @@ app.get('/api/campaigns', async (req, res) => {
                 ON c.id = p.campaign_id 
                 AND COALESCE(p.created_at, c.created_at) >= $1 
                 AND COALESCE(p.created_at, c.created_at) <= $2
-            WHERE (c.created_at >= $1 AND c.created_at <= $2) OR p.id IS NOT NULL
+            WHERE ((c.created_at >= $1 AND c.created_at <= $2) OR p.id IS NOT NULL)
+            ${catQuery}
             GROUP BY c.id
             ORDER BY c.created_at DESC;
         `;
-        const result = await pool.query(query, [startDate.toISOString(), endDate.toISOString()]);
+        const result = await pool.query(query, queryParams);
 
+        // ... (biarkan bagian mapping rows CPE & ER tidak berubah) ...
         const rows = result.rows.map(r => {
             const totalViews = Number(r.total_views);
             const totalEng = Number(r.total_engagement);
             const budget = Number(r.total_budget);
 
             const avgCostPerView = totalViews > 0 ? budget / totalViews : null;
-            // Kalkulasi CPE dan ER baru
             const cpe = totalEng > 0 ? budget / totalEng : null;
             const er = totalViews > 0 ? (totalEng / totalViews * 100).toFixed(2) : 0;
 
@@ -138,15 +148,15 @@ app.get('/api/campaigns/:id', async (req, res) => {
 // ------------------------------------------------------------------
 app.post('/api/campaigns', async (req, res) => {
     try {
-        const { campaignName, productName, platform } = req.body;
+        const { campaignName, productName, platform, category } = req.body; // Tambahan category
         if (!campaignName) {
             return res.status(400).json({ error: 'Nama Campaign wajib diisi' });
         }
 
         const result = await pool.query(
-            `INSERT INTO campaigns (campaign_name, product_name, platform, status, total_budget)
-             VALUES ($1, $2, $3, 'draft', 0) RETURNING *`,
-            [campaignName, productName || null, platform || 'tiktok']
+            `INSERT INTO campaigns (campaign_name, product_name, platform, status, total_budget, category)
+             VALUES ($1, $2, $3, 'draft', 0, $4) RETURNING *`,
+            [campaignName, productName || null, platform || 'tiktok', category || 'Lainnya']
         );
 
         res.json(result.rows[0]);

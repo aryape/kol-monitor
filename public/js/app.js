@@ -12,6 +12,7 @@ const state = {
   activePosts: [],
   sortConfig: { key: 'created_at', direction: 'desc' }, 
   searchQuery: '',
+  categoryFilter: 'all',
 };
 
 // ==========================================================================
@@ -108,7 +109,8 @@ async function loadHomescreen() {
   try {
     const queryParams = new URLSearchParams({
       start: state.startDate,
-      end: state.endDate
+      end: state.endDate,
+      category: state.categoryFilter
     }).toString();
     
     const data = await api(`/api/campaigns?${queryParams}`);
@@ -137,16 +139,24 @@ tbody.innerHTML = rows.map(c => {
     const dash = '<span class="dash">–</span>';
     return `
       <tr class="${hasData ? '' : 'row-draft'}">
+        <!-- Kolom 1: Checkbox untuk Compare -->
+        <td><input type="checkbox" class="cmp-check" value="${c.id}"></td>
+        
+        <!-- Kolom 2: Nama Campaign & Label Kategori -->
         <td>
-          <button class="campaign-row-name" data-id="${c.id}">${escapeHtml(c.campaign_name)} <span>›</span></button>
+          <button class="campaign-row-name" data-id="${c.id}">
+            ${escapeHtml(c.campaign_name)} <span>›</span>
+          </button>
+          <div style="font-size: 11px; color: var(--gray-400); margin-top:4px;">Kategori: ${escapeHtml(c.category)}</div>
         </td>
+        
+        <!-- Kolom 3 sampai selesai: Metrik Performa -->
         <td>${hasData ? formatNumber(c.total_views) : dash}</td>
         <td>${hasData ? formatNumber(c.total_likes) : dash}</td>
         <td>${hasData ? formatNumber(c.total_comments) : dash}</td>
         <td>${hasData ? formatNumber(c.total_saves) : dash}</td>
         <td>${hasData ? formatNumber(c.total_shares) : dash}</td>
         <td>${hasData && c.avg_cost_per_view !== null ? formatRupiah(c.avg_cost_per_view) : dash}</td>
-        <!-- Kolom Baru -->
         <td>${hasData && c.cpe !== null ? formatRupiah(c.cpe) : dash}</td>
         <td>${hasData ? `<span style="color:var(--green); font-weight:600;">${c.er}%</span>` : dash}</td>
       </tr>
@@ -474,13 +484,14 @@ function toggleAddCampaignModal(show) {
 async function handleSubmitCampaign() {
   const campaignName = document.getElementById('new-campaign-name').value.trim();
   const productName = document.getElementById('new-product-name').value.trim();
+  const category = document.getElementById('new-campaign-category').value;
   if (!campaignName) return alert('Nama Campaign wajib diisi.');
   if (!productName) return alert('Produk wajib diisi.');
 
   try {
     await api('/api/campaigns', {
       method: 'POST',
-      body: JSON.stringify({ campaignName, productName, platform: 'tiktok' }),
+      body: JSON.stringify({ campaignName, productName, platform: 'tiktok', category }),
     });
     toggleAddCampaignModal(false);
     loadHomescreen();
@@ -817,6 +828,70 @@ document.addEventListener('DOMContentLoaded', () => {
       loadKOLDatabase();
     });
   }
+
+  // --- FILTER KATEGORI ---
+  const filterCategory = document.getElementById('filter-category');
+  if (filterCategory) {
+    filterCategory.addEventListener('change', (e) => {
+      state.categoryFilter = e.target.value;
+      loadHomescreen();
+    });
+  }
+
+  // --- CHECK ALL CAMPAIGNS ---
+  const checkAllCmp = document.getElementById('check-all-cmp');
+  if (checkAllCmp) {
+    checkAllCmp.addEventListener('change', (e) => {
+      document.querySelectorAll('.cmp-check').forEach(cb => cb.checked = e.target.checked);
+    });
+  }
+
+  // --- COMPARE CAMPAIGNS ---
+  const btnCompare = document.getElementById('btn-compare-campaigns');
+  if (btnCompare) {
+    btnCompare.addEventListener('click', () => {
+      const checkedBoxes = document.querySelectorAll('.cmp-check:checked');
+      if (checkedBoxes.length !== 2) {
+        return alert('Silakan pilih tepat 2 campaign untuk dikomparasi.');
+      }
+      
+      const id1 = parseInt(checkedBoxes[0].value);
+      const id2 = parseInt(checkedBoxes[1].value);
+      const c1 = state.campaigns.find(c => c.id === id1);
+      const c2 = state.campaigns.find(c => c.id === id2);
+
+      if (!c1 || !c2) return;
+
+      document.getElementById('comp-name-1').textContent = c1.campaign_name;
+      document.getElementById('comp-name-2').textContent = c2.campaign_name;
+
+      // Helper kalkulasi selisih warna
+      const getDiff = (v1, v2, isCurrency = false, isPercent = false, reverseGood = false) => {
+        const diff = Number(v1) - Number(v2);
+        if (diff === 0) return '-';
+        const isGood = reverseGood ? diff < 0 : diff > 0;
+        const color = isGood ? 'var(--green)' : 'var(--orange-dark)';
+        const prefix = diff > 0 ? '+' : '';
+        let textVal = isCurrency ? formatRupiah(Math.abs(diff)) : (isPercent ? Math.abs(diff).toFixed(2) + '%' : formatNumber(Math.abs(diff)));
+        return `<span style="color:${color}; font-weight:600;">${prefix}${diff < 0 ? '-' : ''}${textVal}</span>`;
+      };
+
+      document.getElementById('comp-tbody').innerHTML = `
+        <tr><td>Total Budget</td><td>${formatRupiah(c1.total_budget)}</td><td>${formatRupiah(c2.total_budget)}</td><td>${getDiff(c1.total_budget, c2.total_budget, true)}</td></tr>
+        <tr><td>Total Views</td><td>${formatNumber(c1.total_views)}</td><td>${formatNumber(c2.total_views)}</td><td>${getDiff(c1.total_views, c2.total_views)}</td></tr>
+        <tr><td>Total Engagement</td><td>${formatNumber(c1.total_engagement)}</td><td>${formatNumber(c2.total_engagement)}</td><td>${getDiff(c1.total_engagement, c2.total_engagement)}</td></tr>
+        <tr><td>Engagement Rate</td><td>${c1.er}%</td><td>${c2.er}%</td><td>${getDiff(c1.er, c2.er, false, true)}</td></tr>
+        <tr><td>Cost per View</td><td>${formatRupiah(c1.avg_cost_per_view)}</td><td>${formatRupiah(c2.avg_cost_per_view)}</td><td>${getDiff(c1.avg_cost_per_view, c2.avg_cost_per_view, true, false, true)}</td></tr>
+        <tr><td>Cost per Eng (CPE)</td><td>${formatRupiah(c1.cpe)}</td><td>${formatRupiah(c2.cpe)}</td><td>${getDiff(c1.cpe, c2.cpe, true, false, true)}</td></tr>
+      `;
+
+      document.getElementById('modal-compare-campaign').classList.add('active');
+    });
+  }
+
+  document.getElementById('btn-close-compare').addEventListener('click', () => {
+    document.getElementById('modal-compare-campaign').classList.remove('active');
+  });
 
   document.querySelector('.nav-item[data-nav="input"]').addEventListener('click', handleSidebarInputData);
 });

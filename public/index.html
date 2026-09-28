@@ -59,8 +59,18 @@
       <div class="page-header">
         <h1>Dashboard Performa Campaign</h1>
         <div class="header-actions">
+            <button id="btn-compare-campaigns" class="segmented-btn" style="background: var(--blue); color: #fff; margin-right: 8px;">Compare</button>
             <!-- Custom Date Range Filter -->
             <div class="date-filter-group" style="display: flex; gap: 8px; align-items: center; background: #fff; padding: 4px; border: 1px solid var(--gray-200); border-radius: 12px;">
+                <!-- Filter Kategori Campaign -->
+                <select id="filter-category" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer;">
+                  <option value="all">Semua Kategori</option>
+                  <option value="Beauty">Beauty & Skincare</option>
+                  <option value="F&B">F&B</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Tech">Tech & Gadget</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
                 <!-- Dropdown Quick Presets -->
                 <select id="quick-date-preset" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer; color: var(--ink);">
                 <option value="custom">Custom Date</option>
@@ -91,6 +101,7 @@
           <table class="perf-table">
             <thead>
               <tr>
+                <th style="width: 40px;"><input type="checkbox" id="check-all-cmp"></th>
                 <th class="platform-col">
                   <div class="th-platform">Tiktok</div>
                   <div class="th-sub">Nama Campaign</div>
@@ -319,6 +330,16 @@
         <input type="text" id="new-product-name">
       </div>
     </div>
+    <div class="input-field" style="margin-bottom: 20px;">
+        <label>Kategori Campaign</label>
+        <select id="new-campaign-category" style="width: 100%; padding: 12px; border: 1px solid var(--gray-200); border-radius: 10px;">
+          <option value="Beauty">Beauty & Skincare</option>
+          <option value="F&B">F&B</option>
+          <option value="Fashion">Fashion</option>
+          <option value="Tech">Tech & Gadget</option>
+          <option value="Lainnya" selected>Lainnya</option>
+        </select>
+    </div>
     <button class="btn-analyze" id="btn-submit-campaign">Tambah Campaign</button>
     <button class="btn-cancel" id="btn-cancel-campaign">Batal</button>
   </div>
@@ -330,6 +351,25 @@
     <h3 class="modal-title">Pilih Campaign untuk Diisi Datanya</h3>
     <div id="pick-campaign-list" class="pick-list"></div>
     <button class="btn-cancel" id="btn-cancel-pick">Batal</button>
+  </div>
+</div>
+
+<!-- ============ MODAL: COMPARE CAMPAIGN ============ -->
+<div class="modal-overlay" id="modal-compare-campaign">
+  <div class="card modal-content" style="max-width: 700px;">
+    <h3 class="modal-title">Head-to-Head Comparison</h3>
+    <table class="perf-table" style="margin-bottom: 24px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Metrik</th>
+          <th id="comp-name-1" style="color:var(--orange);">Campaign 1</th>
+          <th id="comp-name-2" style="color:var(--blue);">Campaign 2</th>
+          <th>Selisih</th>
+        </tr>
+      </thead>
+      <tbody id="comp-tbody"></tbody>
+    </table>
+    <button class="btn-cancel" id="btn-close-compare">Tutup</button>
   </div>
 </div>
 
