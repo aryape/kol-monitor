@@ -54,19 +54,19 @@
     <!-- Tombol Hamburger Global -->
     <button id="btn-toggle-sidebar" class="btn-hamburger" title="Buka Menu">☰</button>
 
-    <!-- ---------- HOMESCREEN ---------- -->
+<!-- ---------- HOMESCREEN ---------- -->
     <section id="view-homescreen" class="view active">
       <div class="page-header">
         <h1>Dashboard Performa Campaign</h1>
+        
         <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
-            <!-- Tombol Compare yang sudah diperbaiki styling-nya -->
+            <!-- Tombol Compare -->
             <button id="btn-compare-campaigns" style="background-color: #4f46e5; color: #ffffff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; font-family: inherit; cursor: pointer; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); display: flex; align-items: center; gap: 6px; transition: background-color 0.2s;">
                 <span style="font-size: 14px;">⇄</span> Compare
             </button>
 
             <!-- Group Filter (Kategori & Tanggal) -->
             <div class="date-filter-group" style="display: flex; gap: 8px; align-items: center; background: #fff; padding: 4px; border: 1px solid var(--gray-200); border-radius: 12px;">
-                <!-- Filter Kategori Baru -->
                 <select id="filter-category" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer;">
                   <option value="all">Semua Kategori</option>
                   <option value="Beauty">Beauty & Skincare</option>
@@ -75,14 +75,12 @@
                   <option value="Tech">Tech & Gadget</option>
                   <option value="Lainnya">Lainnya</option>
                 </select>
-                <!-- Dropdown Quick Presets -->
                 <select id="quick-date-preset" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer; color: var(--ink);">
                   <option value="custom">Custom Date</option>
                   <option value="this_month">Bulan Ini</option>
                   <option value="last_7_days">7 Hari Terakhir</option>
                   <option value="all_time">Semua Waktu</option>
                 </select>
-                
                 <input type="date" id="filter-start" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
                 <span style="color: var(--gray-400); font-weight: 500;">-</span>
                 <input type="date" id="filter-end" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
@@ -91,9 +89,10 @@
             
             <button class="fab-add" id="btn-open-add-campaign" title="Tambah Campaign">+</button>
         </div>
+      </div> <!-- PENUTUP PAGE HEADER -->
 
-      <!-- Chart Card -->
-      <div class="card" style="margin-bottom: 24px; padding: 16px;">
+      <!-- Chart Card diletakkan DI SINI (Di bawah page-header, di atas table-card) -->
+      <div class="card" style="margin-bottom: 24px; padding: 16px; background: #ffffff;">
         <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--ink);">Tren Performa Harian</h3>
         <div style="position: relative; height: 250px; width: 100%;">
           <canvas id="trendChart"></canvas>
@@ -360,20 +359,26 @@
 
 <!-- ============ MODAL: COMPARE CAMPAIGN ============ -->
 <div class="modal-overlay" id="modal-compare-campaign">
-  <div class="card modal-content" style="max-width: 700px;">
-    <h3 class="modal-title">Head-to-Head Comparison</h3>
-    <table class="perf-table" style="margin-bottom: 24px;">
-      <thead>
-        <tr>
-          <th style="text-align:left;">Metrik</th>
-          <th id="comp-name-1" style="color:var(--orange);">Campaign 1</th>
-          <th id="comp-name-2" style="color:var(--blue);">Campaign 2</th>
-          <th>Selisih</th>
-        </tr>
-      </thead>
-      <tbody id="comp-tbody"></tbody>
-    </table>
-    <button class="btn-cancel" id="btn-close-compare">Tutup</button>
+  <!-- Melebarkan max-width dan memastikan background solid putih -->
+  <div class="card modal-content" style="max-width: 800px; width: 90%; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+    <h3 class="modal-title" style="margin-bottom: 20px;">Head-to-Head Comparison</h3>
+    
+    <!-- Membungkus tabel dengan overflow agar tidak tumpah/transparan -->
+    <div style="overflow-x: auto; background: #ffffff; border-radius: 8px;">
+      <table class="perf-table" style="margin-bottom: 24px; min-width: 600px; background: #ffffff;">
+        <thead>
+          <tr style="background: #f8f9fa;">
+            <th style="text-align:left;">Metrik</th>
+            <th id="comp-name-1" style="color:var(--orange);">Campaign 1</th>
+            <th id="comp-name-2" style="color:#4f46e5;">Campaign 2</th>
+            <th>Selisih</th>
+          </tr>
+        </thead>
+        <tbody id="comp-tbody" style="background: #ffffff;"></tbody>
+      </table>
+    </div>
+    
+    <button class="btn-cancel" id="btn-close-compare" style="width: 100%; margin-top: 8px;">Tutup</button>
   </div>
 </div>
 
