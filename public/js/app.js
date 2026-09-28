@@ -125,6 +125,22 @@ async function loadHomescreen() {
   loadTrendChart();
 }
 
+function updateCompareButtonState() {
+  const btnCompare = document.getElementById('btn-compare-campaigns');
+  if (!btnCompare) return;
+  const checkedBoxes = document.querySelectorAll('.cmp-check:checked');
+  
+  if (checkedBoxes.length === 2) {
+    btnCompare.disabled = false;
+    btnCompare.style.opacity = '1';
+    btnCompare.style.cursor = 'pointer';
+  } else {
+    btnCompare.disabled = true;
+    btnCompare.style.opacity = '0.5';
+    btnCompare.style.cursor = 'not-allowed';
+  }
+}
+
 function renderCampaignTable() {
   const tbody = document.getElementById('campaign-tbody');
   const rows = state.campaigns.slice(0, state.itemsPerPage);
@@ -139,18 +155,16 @@ tbody.innerHTML = rows.map(c => {
     const dash = '<span class="dash">–</span>';
     return `
       <tr class="${hasData ? '' : 'row-draft'}">
-        <!-- Kolom 1: Checkbox untuk Compare -->
         <td><input type="checkbox" class="cmp-check" value="${c.id}"></td>
         
-        <!-- Kolom 2: Nama Campaign & Label Kategori -->
-        <td>
-          <button class="campaign-row-name" data-id="${c.id}">
+        <!-- Tambahkan properti text-align: left; -->
+        <td style="text-align: left;">
+          <button class="campaign-row-name" data-id="${c.id}" style="text-align: left; padding: 0;">
             ${escapeHtml(c.campaign_name)} <span>›</span>
           </button>
           <div style="font-size: 11px; color: var(--gray-400); margin-top:4px;">Kategori: ${escapeHtml(c.category)}</div>
         </td>
         
-        <!-- Kolom 3 sampai selesai: Metrik Performa -->
         <td>${hasData ? formatNumber(c.total_views) : dash}</td>
         <td>${hasData ? formatNumber(c.total_likes) : dash}</td>
         <td>${hasData ? formatNumber(c.total_comments) : dash}</td>
@@ -163,9 +177,20 @@ tbody.innerHTML = rows.map(c => {
     `;
   }).join('');
 
+  // Trigger klik detail campaign
   tbody.querySelectorAll('.campaign-row-name').forEach(btn => {
     btn.addEventListener('click', () => onCampaignRowClick(parseInt(btn.dataset.id)));
   });
+
+  // Trigger ceklis untuk update tombol Compare
+  tbody.querySelectorAll('.cmp-check').forEach(cb => {
+    cb.addEventListener('change', updateCompareButtonState);
+  });
+
+  // Reset status checkbox utama jika tabel dirender ulang
+  const checkAllCmp = document.getElementById('check-all-cmp');
+  if (checkAllCmp) checkAllCmp.checked = false;
+  updateCompareButtonState(); // Reset tombol compare
 }
 
 function onCampaignRowClick(campaignId) {
@@ -566,8 +591,9 @@ async function loadTrendChart() {
       data: {
         labels,
         datasets: [
-          { label: 'Views', data: viewsData, borderColor: '#ff6b00', backgroundColor: 'transparent', tension: 0.4, yAxisID: 'y' },
-          { label: 'Engagement', data: engData, borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.4, yAxisID: 'y1' }
+          // Ubah backgroundColor menjadi solid
+          { label: 'Views', data: viewsData, borderColor: '#ff6b00', backgroundColor: '#ff6b00', tension: 0.4, yAxisID: 'y' },
+          { label: 'Engagement', data: engData, borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4, yAxisID: 'y1' }
         ]
       },
       options: {
@@ -838,11 +864,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- CHECK ALL CAMPAIGNS ---
+// --- CHECK ALL CAMPAIGNS ---
   const checkAllCmp = document.getElementById('check-all-cmp');
   if (checkAllCmp) {
     checkAllCmp.addEventListener('change', (e) => {
       document.querySelectorAll('.cmp-check').forEach(cb => cb.checked = e.target.checked);
+      updateCompareButtonState(); // Panggil fungsi ini agar tombol bereaksi saat 'Select All' diklik
     });
   }
 

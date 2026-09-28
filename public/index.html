@@ -60,11 +60,6 @@
         <h1>Dashboard Performa Campaign</h1>
         
         <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
-            <!-- Tombol Compare -->
-            <button id="btn-compare-campaigns" style="background-color: #4f46e5; color: #ffffff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; font-family: inherit; cursor: pointer; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); display: flex; align-items: center; gap: 6px; transition: background-color 0.2s;">
-                <span style="font-size: 14px;">⇄</span> Compare
-            </button>
-
             <!-- Group Filter (Kategori & Tanggal) -->
             <div class="date-filter-group" style="display: flex; gap: 8px; align-items: center; background: #fff; padding: 4px; border: 1px solid var(--gray-200); border-radius: 12px;">
                 <select id="filter-category" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: #f4f5f7; border-radius: 8px; cursor: pointer;">
@@ -84,7 +79,7 @@
                 <input type="date" id="filter-start" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
                 <span style="color: var(--gray-400); font-weight: 500;">-</span>
                 <input type="date" id="filter-end" class="date-input" style="border: none; outline: none; font-family: inherit; font-size: 13px; padding: 4px 8px; background: transparent;">
-                <button id="btn-apply-filter" class="segmented-btn active" style="margin-left: 4px;">Terapkan</button>
+                <button id="btn-apply-filter" class="segmented-btn active" style="margin-left: 4px; border-radius: 8px">Terapkan</button>
             </div>
             
             <button class="fab-add" id="btn-open-add-campaign" title="Tambah Campaign">+</button>
@@ -127,7 +122,7 @@
         </div>
       </div>
 
-      <div class="table-footer">
+      <div class="table-footer" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="items-per-page">
           Items Per Page:
           <select id="items-per-page">
@@ -136,7 +131,15 @@
             <option value="50">50</option>
           </select>
         </div>
-        <button class="btn-export" id="btn-export-home">⬇ Export to Spreadsheet</button>
+        
+        <!-- Wadah baru untuk Compare & Export -->
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <!-- Tombol Compare dipindah ke sini (disabled by default) -->
+            <button id="btn-compare-campaigns" disabled style="background-color: #4f46e5; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; font-family: inherit; cursor: not-allowed; opacity: 0.5; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <span style="font-size: 14px;">⇄</span> Compare
+            </button>
+            <button class="btn-export" id="btn-export-home">⬇ Export to Spreadsheet</button>
+        </div>
       </div>
 
       <div class="two-col">
