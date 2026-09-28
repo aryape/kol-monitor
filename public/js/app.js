@@ -120,6 +120,7 @@ async function loadHomescreen() {
 
   loadTopAccounts();
   loadTopContent();
+  loadTrendChart();
 }
 
 function renderCampaignTable() {
@@ -529,6 +530,76 @@ async function handleSidebarInputData() {
 }
 
 // ==========================================================================
+// TREN GRAFIK & KOL DATABASE
+// ==========================================================================
+let trendChartInstance = null;
+
+async function loadTrendChart() {
+  try {
+    const queryParams = new URLSearchParams({ start: state.startDate, end: state.endDate }).toString();
+    const data = await api(`/api/trends?${queryParams}`);
+    
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChartInstance) trendChartInstance.destroy(); // Hapus grafik lama jika ada
+    
+    // Format label tanggal (DD/MM)
+    const labels = data.map(d => {
+       const date = new Date(d.date);
+       return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth()+1).toString().padStart(2, '0')}`;
+    });
+    const viewsData = data.map(d => Number(d.total_views));
+    const engData = data.map(d => Number(d.total_engagement));
+
+    trendChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Views', data: viewsData, borderColor: '#ff6b00', backgroundColor: 'transparent', tension: 0.4, yAxisID: 'y' },
+          { label: 'Engagement', data: engData, borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.4, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          y: { type: 'linear', display: true, position: 'left', ticks: { callback: v => formatNumber(v) } },
+          y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => formatNumber(v) } }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Gagal memuat grafik:", err);
+  }
+}
+
+async function loadKOLDatabase() {
+  const tbody = document.getElementById('kol-db-tbody');
+  tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Memuat data KOL...</td></tr>`;
+  try {
+    const data = await api('/api/kols');
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Belum ada data KOL di database.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(k => `
+      <tr>
+        <td style="display:flex; align-items:center; gap:12px;">
+          <img src="${k.author_avatar || ''}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" onerror="this.style.display='none'">
+          <strong>${escapeHtml(k.author)}</strong>
+        </td>
+        <td>${k.total_campaigns} Project</td>
+        <td>${formatNumber(k.total_views)}</td>
+        <td>${formatNumber(k.total_engagement)}</td>
+        <td><span style="color:var(--green); font-weight:600;">${k.avg_er}%</span></td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Gagal memuat data: ${err.message}</td></tr>`;
+  }
+}
+
+// ==========================================================================
 // EVENT BINDINGS
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -736,5 +807,16 @@ document.addEventListener('DOMContentLoaded', () => {
     switchView('view-homescreen');
     loadHomescreen();
   });
+
+// Sidebar navigation tambahan
+  const navKolDb = document.querySelector('.nav-item[data-nav="kol-db"]');
+  if (navKolDb) {
+    navKolDb.addEventListener('click', () => {
+      setSidebarActive('kol-db');
+      switchView('view-kol-db');
+      loadKOLDatabase();
+    });
+  }
+
   document.querySelector('.nav-item[data-nav="input"]').addEventListener('click', handleSidebarInputData);
 });

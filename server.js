@@ -349,6 +349,61 @@ app.get('/api/top-content', async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------
+// 9. ENDPOINT: Visualisasi Tren Harian
+// ------------------------------------------------------------------
+app.get('/api/trends', async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        const startDate = start ? new Date(start) : new Date(0);
+        const endDate = end ? new Date(end) : new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const query = `
+            SELECT 
+                DATE(created_at) as date,
+                SUM(views)::bigint as total_views,
+                SUM(likes + comments + shares + saves)::bigint as total_engagement
+            FROM campaign_posts
+            WHERE created_at >= $1 AND created_at <= $2
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC;
+        `;
+        const result = await pool.query(query, [startDate.toISOString(), endDate.toISOString()]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('DB Error [GET /api/trends]:', error);
+        res.status(500).json({ error: 'Gagal mengambil data tren' });
+    }
+});
+
+// ------------------------------------------------------------------
+// 10. ENDPOINT: KOL Database (Direktori Historis)
+// ------------------------------------------------------------------
+app.get('/api/kols', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                author,
+                MAX(author_avatar) as author_avatar,
+                COUNT(DISTINCT campaign_id) as total_campaigns,
+                SUM(views)::bigint as total_views,
+                SUM(likes + comments + shares + saves)::bigint as total_engagement,
+                CASE WHEN SUM(views) > 0 
+                     THEN ROUND(100.0 * SUM(likes + comments + shares + saves) / SUM(views), 2)
+                     ELSE 0 END as avg_er
+            FROM campaign_posts
+            GROUP BY author
+            ORDER BY total_engagement DESC;
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('DB Error [GET /api/kols]:', error);
+        res.status(500).json({ error: 'Gagal mengambil data KOL' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server berjalan di port ${PORT}`);

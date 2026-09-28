@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -27,6 +28,9 @@
       <div class="sidebar-label">MENU</div>
       <button class="nav-item active" data-nav="overview">
         <span class="nav-icon">🔍</span> Overview
+      </button>
+      <button class="nav-item" data-nav="kol-db">
+        <span class="nav-icon">👥</span> KOL Database
       </button>
       <button class="nav-item" data-nav="input">
         <span class="nav-icon">↪</span> Input Data
@@ -74,6 +78,14 @@
             </div>
       </div>
 
+      <!-- Chart Card -->
+      <div class="card" style="margin-bottom: 24px; padding: 16px;">
+        <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--ink);">Tren Performa Harian</h3>
+        <div style="position: relative; height: 250px; width: 100%;">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      
       <div class="card table-card">
         <div class="table-scroll">
           <table class="perf-table">
@@ -263,6 +275,31 @@
           </table>
         </div>
       </div>      
+    </section>
+
+    <!-- ---------- KOL DATABASE ---------- -->
+    <section id="view-kol-db" class="view">
+      <div class="page-header">
+        <h1>KOL Database (Historis)</h1>
+      </div>
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="perf-table">
+            <thead>
+              <tr>
+                <th class="platform-col">Nama KOL</th>
+                <th>Total Campaign</th>
+                <th>Total Views</th>
+                <th>Total Engagement</th>
+                <th>Average ER</th>
+              </tr>
+            </thead>
+            <tbody id="kol-db-tbody">
+              <tr><td colspan="5" class="empty-cell">Memuat data KOL...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
   </main>
