@@ -37,16 +37,16 @@
       </button>
     </div>
 
-  <div class="sidebar-menu">
-    <p class="menu-label">PLATFORM</p>
-    <!-- Tambahkan id dan class platform-btn -->
-    <button id="nav-tiktok" class="platform-btn active" data-platform="tiktok">
-      <span class="icon">🎵</span> Tiktok
-    </button>
-    <button id="nav-instagram" class="platform-btn" data-platform="instagram">
-      <span class="icon">◎</span> Instagram
-    </button>
-  </div>
+  <div class="sidebar-section">
+        <div class="sidebar-label">PLATFORM</div>
+        <!-- Gabungkan class nav-item dan platform-btn -->
+        <button class="nav-item platform-btn active" data-platform="tiktok">
+          <span class="nav-icon">🎵</span> Tiktok
+        </button>
+        <button class="nav-item platform-btn" data-platform="instagram">
+          <span class="nav-icon">◎</span> Instagram
+        </button>
+      </div>
 
   </aside>
 
@@ -252,7 +252,7 @@
         <div class="input-row">
           <div class="input-field">
             <label>Url Postingan (pisahkan dengan koma)<span class="req">*</span></label>
-            <input type="text" id="url-inputs" placeholder="https://www.tiktok.com/...">
+            <input type="text" id="url-inputs" placeholder="https://">
           </div>
           <div class="input-field">
             <label>Budget Campaign<span class="req">*</span></label>
@@ -266,7 +266,7 @@
 
         <button class="btn-analyze" id="btn-analisa">Analisa Postingan</button>
         <div class="loading-caption" id="loading-caption" style="display:none;">
-          Menarik data dari TikTok dan menyimpan ke database... proses ini bisa memakan waktu 1–2 menit.
+          Menarik data dari ##platform dan menyimpan ke database... proses ini bisa memakan waktu 1–2 menit.
         </div>
       </div>
 

@@ -228,7 +228,8 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
                 username: urls, // Instagram Reel Scraper menerima array URL di field username
                 resultsLimit: urls.length,
                 skipPinnedPosts: false,
-                skipTrialReels: true
+                skipTrialReels: true,
+                includeSharesCount: true
             };
         } else {
             // Default Tiktok
