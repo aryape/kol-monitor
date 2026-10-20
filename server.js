@@ -28,7 +28,7 @@ const apify = new ApifyClient({
 // Actor id per platform. Ganti sesuai actor Apify yang kamu pakai.
 const APIFY_ACTORS = {
     tiktok: process.env.APIFY_ACTOR_TIKTOK || 'GdWCkxBtKWOsKjdch',
-    instagram: process.env.APIFY_ACTOR_INSTAGRAM || 'apify/instagram-post-scraper',
+    instagram: process.env.APIFY_ACTOR_INSTAGRAM || 'apify/instagram-reel-scraper',
 };
 
 // Helper: tentukan awal periode (bulan berjalan / minggu berjalan - Senin s.d sekarang)
@@ -51,7 +51,7 @@ function getPeriodStart(period) {
 // ------------------------------------------------------------------
 app.get('/api/campaigns', async (req, res) => {
     try {
-        const { start, end, category } = req.query; // Tambahan category
+        const { start, end, category, platform } = req.query;
         const startDate = start ? new Date(start) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
@@ -61,8 +61,13 @@ app.get('/api/campaigns', async (req, res) => {
         const queryParams = [startDate.toISOString(), endDate.toISOString()];
         
         if (category && category !== 'all') {
-            catQuery = `AND c.category = $3`;
             queryParams.push(category);
+            catQuery += ` AND c.category = $${queryParams.length}`;
+        }
+
+        if (platform) {
+            queryParams.push(platform);
+            catQuery += ` AND c.platform = $${queryParams.length}`;
         }
 
         const query = `
@@ -212,16 +217,29 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
         const campaign = campaignResult.rows[0];
         const platform = campaign.platform || 'tiktok';
 
-        console.log(`[LOG] Memulai proses ETL utk Campaign #${id} (${campaign.campaign_name})`);
+        console.log(`[LOG] Memulai proses ETL utk Campaign #${id} (${campaign.campaign_name}) via platform ${platform}`);
 
         // --- EXTRACT (Apify) ---
-        const input = {
-            postURLs: urls,
-            hashtags: [],
-            resultsPerPage: urls.length,
-            profileScrapeSections: ['videos'],
-            profileSorting: 'latest',
-        };
+        let input = {};
+        
+        // Penyesuaian parameter input berdasarkan platform
+        if (platform === 'instagram') {
+            input = {
+                username: urls, // Instagram Reel Scraper menerima array URL di field username
+                resultsLimit: urls.length,
+                skipPinnedPosts: false,
+                skipTrialReels: true
+            };
+        } else {
+            // Default Tiktok
+            input = {
+                postURLs: urls,
+                hashtags: [],
+                resultsPerPage: urls.length,
+                profileScrapeSections: ['videos'],
+                profileSorting: 'latest',
+            };
+        }
 
         const run = await apify.actor(APIFY_ACTORS[platform] || APIFY_ACTORS.tiktok).call(input);
         const { items } = await apify.dataset(run.defaultDatasetId).listItems();
@@ -238,15 +256,27 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
         const insertedPosts = [];
 
         for (const data of items) {
-            const views = data.playCount || 0;
-            const likes = data.diggCount || 0;
-            const comments = data.commentCount || 0;
-            const shares = data.shareCount || 0;
-            const saves = data.collectCount || 0;
+            // Penyesuaian mapping metrik berdasarkan struktur JSON API
+            const views = (platform === 'instagram' ? (data.videoPlayCount || data.videoViewCount) : data.playCount) || 0;
+            const likes = (platform === 'instagram' ? data.likesCount : data.diggCount) || 0;
+            const comments = (platform === 'instagram' ? data.commentsCount : data.commentCount) || 0;
+            const shares = (platform === 'instagram' ? data.sharesCount : data.shareCount) || 0;
+            const saves = (platform === 'instagram' ? data.savesCount : data.collectCount) || 0;
             const gmv = data.gmv || 0; 
             const cpv = views > 0 ? budgetPerPost / views : 0;
-            const avatar = data['authorMeta.avatar'] || data.authorMeta?.avatar || '';
-            const postCreatedAt = data.createTimeISO || new Date().toISOString();
+            
+            // Penyesuaian metadata konten 
+            const author = platform === 'instagram' 
+                ? (data.ownerUsername || 'Unknown') 
+                : (data.authorMeta?.name || data.ownerUsername || 'Unknown');
+                
+            const avatar = platform === 'instagram' 
+                ? (data.ownerProfilePicUrl || '') 
+                : (data['authorMeta.avatar'] || data.authorMeta?.avatar || '');
+                
+            const postUrl = platform === 'instagram' ? (data.url || '') : (data.webVideoUrl || data.url || '');
+            const postTitle = platform === 'instagram' ? (data.caption || '') : (data.text || data.caption || '');
+            const postCreatedAt = platform === 'instagram' ? (data.timestamp || new Date().toISOString()) : (data.createTimeISO || new Date().toISOString());
 
             const inserted = await dbClient.query(
                 `INSERT INTO campaign_posts
@@ -256,9 +286,9 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
                 [
                     id, 
                     platform, 
-                    data.authorMeta?.name || data.ownerUsername || 'Unknown', 
-                    data.webVideoUrl || data.url || '', 
-                    data.text || data.caption || '', 
+                    author, 
+                    postUrl, 
+                    postTitle, 
                     views, 
                     likes, 
                     comments, 
@@ -301,7 +331,7 @@ app.post('/api/campaigns/:id/analyze', async (req, res) => {
 app.get('/api/top-accounts', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
-        const { start, end } = req.query;
+        const { start, end, platform } = req.query;
         const startDate = start ? new Date(start) : new Date(0);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
@@ -317,12 +347,13 @@ app.get('/api/top-accounts', async (req, res) => {
                     ELSE 0 END AS engagement_rate
             FROM campaign_posts
             WHERE created_at >= $2 AND created_at <= $3
+            AND platform = $4
             GROUP BY author
             -- Ubah urutan menjadi berdasarkan engagement tertinggi
             ORDER BY total_engagement DESC, total_views DESC
             LIMIT $1;
         `;
-        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString()]);
+        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString(), platform || 'tiktok']);
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: 'Gagal mengambil top account' });
@@ -332,7 +363,7 @@ app.get('/api/top-accounts', async (req, res) => {
 app.get('/api/top-content', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
-        const { start, end } = req.query;
+        const { start, end, platform } = req.query;
 
         const startDate = start ? new Date(start) : new Date(0);
         const endDate = end ? new Date(end) : new Date();
@@ -348,10 +379,11 @@ app.get('/api/top-content', async (req, res) => {
             FROM campaign_posts
             -- Filter berdasarkan tanggal postingan dibuat
             WHERE created_at >= $2 AND created_at <= $3
+            AND platform = $4
             ORDER BY (views + likes) DESC
             LIMIT $1;
         `;
-        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString()]);
+        const result = await pool.query(query, [limit, startDate.toISOString(), endDate.toISOString(), platform || 'tiktok']);
         res.json(result.rows);
     } catch (error) {
         console.error('DB Error [GET /api/top-content]:', error);
@@ -364,7 +396,7 @@ app.get('/api/top-content', async (req, res) => {
 // ------------------------------------------------------------------
 app.get('/api/trends', async (req, res) => {
     try {
-        const { start, end } = req.query;
+        const { start, end, platform } = req.query;
         const startDate = start ? new Date(start) : new Date(0);
         const endDate = end ? new Date(end) : new Date();
         endDate.setHours(23, 59, 59, 999);
@@ -376,6 +408,7 @@ app.get('/api/trends', async (req, res) => {
                 SUM(likes + comments + shares + saves)::bigint as total_engagement
             FROM campaign_posts
             WHERE created_at >= $1 AND created_at <= $2
+            AND platform = $3
             GROUP BY DATE(created_at)
             ORDER BY date ASC;
         `;

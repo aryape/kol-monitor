@@ -4,6 +4,7 @@
 const state = {
   startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], 
   endDate: new Date().toISOString().split('T')[0],
+  platform: 'tiktok',
   campaigns: [],           
   itemsPerPage: 10,
   itemsPerPageDetail: 10,
@@ -110,7 +111,8 @@ async function loadHomescreen() {
     const queryParams = new URLSearchParams({
       start: state.startDate,
       end: state.endDate,
-      category: state.categoryFilter
+      category: state.categoryFilter,
+      platform: state.platform
     }).toString();
     
     const data = await api(`/api/campaigns?${queryParams}`);
@@ -218,7 +220,8 @@ async function loadTopAccounts() {
     const queryParams = new URLSearchParams({
       limit: 5,
       start: state.startDate,
-      end: state.endDate
+      end: state.endDate,
+      platform: state.platform
     }).toString();
     
     const data = await api(`/api/top-accounts?${queryParams}`);
@@ -252,7 +255,8 @@ async function loadTopContent() {
     const queryParams = new URLSearchParams({
       limit: 5,
       start: state.startDate,
-      end: state.endDate
+      end: state.endDate,
+      platform: state.platform
     }).toString();
     
     const data = await api(`/api/top-content?${queryParams}`);
@@ -516,7 +520,7 @@ async function handleSubmitCampaign() {
   try {
     await api('/api/campaigns', {
       method: 'POST',
-      body: JSON.stringify({ campaignName, productName, platform: 'tiktok', category }),
+      body: JSON.stringify({ campaignName, productName, platform: state.platform, category }),
     });
     toggleAddCampaignModal(false);
     loadHomescreen();
@@ -572,7 +576,7 @@ let trendChartInstance = null;
 
 async function loadTrendChart() {
   try {
-    const queryParams = new URLSearchParams({ start: state.startDate, end: state.endDate }).toString();
+    const queryParams = new URLSearchParams({ start: state.startDate, end: state.endDate, platform: state.platform }).toString();
     const data = await api(`/api/trends?${queryParams}`);
     
     const ctx = document.getElementById('trendChart').getContext('2d');
@@ -675,6 +679,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+// --- NAVIGASI PLATFORM ---
+  document.querySelectorAll('.platform-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      // Ubah state visual tombol
+      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+      const targetBtn = e.currentTarget;
+      targetBtn.classList.add('active');
+      
+      // Update state global
+      state.platform = targetBtn.dataset.platform;
+      
+      // Ubah teks UI yang menyebutkan nama platform (Kolom Tabel & Input Data)
+      const platformLabel = state.platform === 'instagram' ? 'Instagram' : 'Tiktok';
+      document.querySelectorAll('.th-platform').forEach(el => el.textContent = platformLabel);
+      
+      const inputTitle = document.querySelector('.input-title');
+      if (inputTitle) inputTitle.textContent = `Add Campaign - ${platformLabel}`;
+      
+      // Reset filter kategori ke 'all' saat ganti platform (opsional tapi disarankan)
+      if (document.getElementById('filter-category')) {
+        document.getElementById('filter-category').value = 'all';
+        state.categoryFilter = 'all';
+      }
+
+      // Reload seluruh data dashboard sesuai platform baru
+      loadHomescreen();
+    });
+  });
+
   // Set default value ke input HTML saat halaman dimuat
   document.getElementById('filter-start').value = state.startDate;
   document.getElementById('filter-end').value = state.endDate;
